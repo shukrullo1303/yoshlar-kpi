@@ -1,0 +1,7 @@
+django
+pillow
+djangorestframework
+drf-yasg
+django-cors-headers
+# django-filter
+django-debug-toolbar
