@@ -1,14 +1,11 @@
 from rest_framework.response import Response
 from rest_framework import status
-from src.core.models import KPITask
-from src.api.views.stats import MAX_SCORES
+from src.core.models import KPITask, KPIDirection
 from .base import BaseAdminAPIView
 
 
 class AdminReviewTaskView(BaseAdminAPIView):
-    """Topshiriqni tasdiqlash yoki rad etish.
-    POST body: { "action": "tasdiqlash" | "rad_etish", "score": float, "admin_comment": str }
-    """
+    """Topshiriqni tasdiqlash yoki rad etish."""
 
     def post(self, request, task_id):
         try:
@@ -30,7 +27,12 @@ class AdminReviewTaskView(BaseAdminAPIView):
             except (TypeError, ValueError):
                 return Response({"error": "Ball son bo'lishi kerak"}, status=status.HTTP_400_BAD_REQUEST)
 
-            max_score = MAX_SCORES.get(task.direction, 10)
+            try:
+                direction = KPIDirection.objects.get(key=task.direction)
+                max_score = direction.max_score
+            except KPIDirection.DoesNotExist:
+                max_score = 10
+
             if given_score < 0 or given_score > max_score:
                 return Response(
                     {"error": f"Ball 0 dan {max_score} gacha bo'lishi kerak"},

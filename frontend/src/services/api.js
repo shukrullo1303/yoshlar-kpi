@@ -23,6 +23,9 @@ const request = async (url, options = {}) => {
 }
 
 export const api = {
+  // Directions
+  getDirections: () => request('/directions/'),
+
   // Auth
   getCsrf: () => request('/auth/csrf/'),
   login: (username, password) =>
@@ -36,13 +39,44 @@ export const api = {
     const params = month ? `?month=${month}` : ''
     return request(`/admin/dashboard/${params}`)
   },
-  getSliderTasks: (direction, month) => {
-    const params = month ? `?month=${month}` : ''
-    return request(`/admin/slider/${direction}/${params}`)
+  getSliderTasks: (direction, month, taskStatus = 'sariq') => {
+    const params = new URLSearchParams()
+    if (month) params.set('month', month)
+    if (taskStatus) params.set('status', taskStatus)
+    const qs = params.toString()
+    return request(`/admin/slider/${direction}/${qs ? `?${qs}` : ''}`)
   },
   reviewTask: (taskId, action, score, adminComment) =>
     request(`/admin/review/${taskId}/`, {
       method: 'POST',
       body: JSON.stringify({ action, score, admin_comment: adminComment }),
+    }),
+  submitTask: (formData) =>
+    fetch(`${API_BASE}/user/submit/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrfToken() },
+      credentials: 'include',
+      body: formData,
+    }).then(async res => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+        throw new Error(err.error || err.detail || `HTTP ${res.status}`)
+      }
+      return res.json()
+    }),
+  getUserDashboard: (month) => {
+    const params = month ? `?month=${month}` : ''
+    return request(`/user/dashboard/${params}`)
+  },
+  getDistrictsRanking: (month) => {
+    const params = month ? `?month=${month}` : ''
+    return request(`/admin/districts/${params}`)
+  },
+  getBulkScores: (direction, date) =>
+    request(`/admin/bulk-score/?direction=${direction}&date=${date}`),
+  saveBulkScores: (direction, date, scores) =>
+    request('/admin/bulk-score/', {
+      method: 'POST',
+      body: JSON.stringify({ direction, date, scores }),
     }),
 }

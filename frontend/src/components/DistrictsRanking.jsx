@@ -1,227 +1,284 @@
-import { useState } from 'react'
-import { Download, Eye, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Download } from 'lucide-react'
 import jsPDF from 'jspdf'
+import { api } from '../services/api'
 
-const CATEGORY_NAMES = [
-  'Ijro Intizomi', 'Yoshlar Balansi', 'Yoshlar Bandligi',
-  "Bo'sh Vaqtni Tashkil", 'Ijtimoiy Profilaktika', 'Murojaatlar bilan Ishlash',
-  'Brand Loyihalari', "Ta'lim Muassasalari", 'Zamonaviy Kasblar', 'Nomenklatura',
+const DIRECTIONS = [
+  { key: '1_ijro',          short: 'Ijro',        label: 'Ijro Intizomi',            max: 20 },
+  { key: '2_balans',        short: 'Balans',       label: 'Yoshlar Balansi',          max: 5  },
+  { key: '3_bandlik',       short: 'Bandlik',      label: 'Yoshlar Bandligi',         max: 15 },
+  { key: '4_bosh_vaqt',    short: "Bo'sh Vaqt",   label: "Bo'sh Vaqtni Tashkil",    max: 15 },
+  { key: '5_profilaktika',  short: 'Profilak.',    label: 'Ijtimoiy Profilaktika',    max: 10 },
+  { key: '6_murojaat',      short: 'Murojaat',     label: 'Murojaatlar',              max: 5  },
+  { key: '7_brend',         short: 'Brend',        label: 'Brand Loyihalari',         max: 10 },
+  { key: '8_talim',         short: "Ta'lim",       label: "Ta'lim Muassasalari",      max: 5  },
+  { key: '9_startap',       short: 'Startap',      label: 'Zamonaviy Kasblar',        max: 5  },
+  { key: '10_nomenklatura', short: 'Nomen.',       label: 'Nomenklatura Hujjatlar',   max: 10 },
 ]
 
-const MAX_SCORES = [20, 5, 15, 15, 10, 5, 10, 5, 5, 10]
+const MAX_TOTAL = DIRECTIONS.reduce((s, d) => s + d.max, 0)
 
-const MAHALLALAR = [
-  { id: 1,  name: 'Markaziy mahalla',    scores: [20, 5, 14, 13, 9,  5, 9,  5, 4, 9]  },
-  { id: 2,  name: 'Yangi mahalla',       scores: [18, 4, 13, 12, 8,  4, 8,  4, 3, 8]  },
-  { id: 3,  name: 'Bog\'iston mahalla',  scores: [19, 5, 15, 15, 10, 5, 10, 5, 5, 10] },
-  { id: 4,  name: 'Guliston mahalla',    scores: [15, 3, 11, 10, 7,  3, 7,  3, 2, 7]  },
-  { id: 5,  name: 'Navro\'z mahalla',    scores: [17, 4, 12, 12, 8,  4, 8,  4, 3, 8]  },
-  { id: 6,  name: 'Mehr mahalla',        scores: [14, 2, 10, 9,  6,  2, 6,  2, 1, 6]  },
-  { id: 7,  name: 'Baxt mahalla',        scores: [16, 4, 11, 11, 7,  4, 7,  4, 2, 7]  },
-  { id: 8,  name: 'Fayz mahalla',        scores: [13, 2, 9,  8,  5,  2, 5,  2, 1, 5]  },
-  { id: 9,  name: 'Shofirkon mahalla',   scores: [20, 5, 15, 15, 10, 5, 10, 5, 5, 10] },
-  { id: 10, name: 'Oqtepa mahalla',      scores: [12, 1, 8,  7,  4,  1, 4,  1, 1, 4]  },
-].map(d => ({ ...d, total: d.scores.reduce((a, b) => a + b, 0) }))
- .sort((a, b) => b.total - a.total)
-
-function getRankStyle(index, total) {
-  if (index < 3) return { row: 'bg-green-50 border-l-4 border-green-500', badge: 'bg-green-100 text-green-700' }
-  if (index >= total - 3) return { row: 'bg-red-50 border-l-4 border-red-500', badge: 'bg-red-100 text-red-700' }
-  return { row: 'bg-yellow-50 border-l-4 border-yellow-500', badge: 'bg-yellow-100 text-yellow-700' }
+function pct(score, max) {
+  return max ? Math.round((score / max) * 100) : 0
 }
 
-function getRankLabel(index) {
-  if (index === 0) return "🥇 1-o'rin"
-  if (index === 1) return "🥈 2-o'rin"
-  if (index === 2) return "🥉 3-o'rin"
-  return `${index + 1}-o'rin`
+function rowStyle(rank, total) {
+  if (rank <= 3)         return { row: 'bg-emerald-50 hover:bg-emerald-100', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-300', bar: 'bg-emerald-500' }
+  if (rank > total - 3) return { row: 'bg-red-50 hover:bg-red-100',         badge: 'bg-red-100 text-red-700 border border-red-300',             bar: 'bg-red-400'     }
+  return                        { row: 'bg-amber-50 hover:bg-amber-100',     badge: 'bg-amber-100 text-amber-700 border border-amber-300',       bar: 'bg-amber-400'   }
 }
 
-function generatePDF(district, allDistricts) {
+function ScoreCell({ score, max }) {
+  const p = pct(score, max)
+  const cls = p >= 80 ? 'text-emerald-700 font-semibold' : p >= 50 ? 'text-amber-700' : 'text-red-600'
+  return <span className={cls}>{score > 0 ? score : <span className="text-slate-300">—</span>}</span>
+}
+
+function generatePDF(row, allRows) {
   const doc = new jsPDF()
   doc.setFontSize(16)
-  doc.text(`${district.name} — KPI Reytingi`, 20, 20)
-  doc.setFontSize(12)
-  doc.text(`Jami Ballar: ${district.total}`, 20, 35)
-  const rank = allDistricts.findIndex(d => d.id === district.id) + 1
-  doc.text(`O'rin: ${rank} / ${allDistricts.length}`, 20, 45)
-  doc.setFontSize(10)
-  let y = 60
-  doc.text("Yo'nalish", 20, y)
-  doc.text('Ball', 150, y)
-  y += 10
-  district.scores.forEach((score, i) => {
-    doc.text(CATEGORY_NAMES[i], 20, y)
-    doc.text(`${score} / ${MAX_SCORES[i]}`, 150, y)
+  doc.text(`${row.name} MFY — KPI Reytingi`, 14, 18)
+  doc.setFontSize(11)
+  const rank = allRows.findIndex(r => r.id === row.id) + 1
+  doc.text(`Jami: ${row.total} / ${MAX_TOTAL} ball  |  O'rin: ${rank} / ${allRows.length}`, 14, 28)
+  doc.setFontSize(9)
+  let y = 42
+  DIRECTIONS.forEach((d, i) => {
+    doc.text(d.label, 14, y)
+    doc.text(`${row.scores[i]} / ${d.max}`, 155, y)
     y += 8
-    if (y > 260) { doc.addPage(); y = 20 }
   })
-  doc.setFontSize(8)
-  doc.text(`Yaratilgan: ${new Date().toLocaleString('uz-UZ')}`, 20, doc.internal.pageSize.height - 10)
-  doc.save(`${district.name}-reyting.pdf`)
+  doc.setFontSize(7)
+  doc.text(`Yaratilgan: ${new Date().toLocaleString('uz-UZ')}`, 14, 285)
+  doc.save(`${row.name}-reyting.pdf`)
 }
 
-export function DistrictsRanking() {
-  const [activeTab, setActiveTab] = useState('umumiy')
-  const [selectedCat, setSelectedCat] = useState(0)
-  const [preview, setPreview] = useState(null)
-
-  const sortedByCat = [...MAHALLALAR].sort((a, b) => b.scores[selectedCat] - a.scores[selectedCat])
-
-  const catStats = (() => {
-    const total = MAHALLALAR.length
-    const maxPossible = MAX_SCORES[selectedCat] * total
-    const scored = MAHALLALAR.reduce((s, d) => s + d.scores[selectedCat], 0)
-    const completed = MAHALLALAR.filter(d => d.scores[selectedCat] === MAX_SCORES[selectedCat]).length
-    return {
-      pct: Math.round((scored / maxPossible) * 100),
-      avg: Math.round(scored / total * 10) / 10,
-      scored, maxPossible, completed, total,
-    }
-  })()
+// ─── Umumiy reyting: to'liq jadval ──────────────────────────────────────────
+function UmumiyReyting({ rows }) {
+  if (!rows.length) return <p className="text-slate-400 text-sm py-8 text-center">Ma'lumot yo'q</p>
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Mahallalar Reytingi</h2>
-        <p className="text-slate-600 text-sm">10 yo'nalish bo'yicha jami ballar asosida tartiblangan</p>
+    <div className="space-y-5">
+      <div className="flex gap-4 text-xs font-medium text-slate-600 flex-wrap pb-1">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-400 inline-block" />Top 3 — eng yaxshi</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 inline-block" />O'rtacha</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-400 inline-block" />Eng past 3</span>
+        <span className="flex items-center gap-1.5 ml-auto text-slate-400">Jami max: {MAX_TOTAL} ball</span>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 bg-white rounded-lg p-2 border border-slate-200">
-        {[['umumiy', "Umumiy Reyting"], ['yonalish', "Yo'nalishlar Bo'yicha"]].map(([key, label]) => (
-          <button key={key} onClick={() => setActiveTab(key)}
-            className={`px-6 py-2 font-medium rounded transition-colors ${activeTab === key ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-100'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Umumiy reyting */}
-      {activeTab === 'umumiy' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded"><p className="text-sm font-semibold text-green-900">Eng yaxshi 3 ta</p></div>
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded"><p className="text-sm font-semibold text-yellow-900">O'rtacha</p></div>
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded"><p className="text-sm font-semibold text-red-900">Eng past 3 ta</p></div>
-          </div>
-
-          <div className="space-y-3">
-            {MAHALLALAR.map((d, i) => {
-              const s = getRankStyle(i, MAHALLALAR.length)
+      <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+        <table className="w-full text-sm border-collapse min-w-max">
+          <thead>
+            <tr className="bg-slate-800 text-white text-xs">
+              <th className="sticky left-0 z-20 bg-slate-800 px-3 py-3 text-center w-10">#</th>
+              <th className="sticky left-10 z-20 bg-slate-800 px-4 py-3 text-left min-w-44">MFY nomi</th>
+              {DIRECTIONS.map(d => (
+                <th key={d.key} className="px-2 py-3 text-center font-medium">
+                  <div className="font-semibold">{d.short}</div>
+                  <div className="text-slate-400 text-[10px] font-normal mt-0.5">max {d.max}</div>
+                </th>
+              ))}
+              <th className="px-3 py-3 text-center font-bold bg-slate-700 min-w-20">
+                <div>Jami</div>
+                <div className="text-slate-400 text-[10px] font-normal mt-0.5">/{MAX_TOTAL}</div>
+              </th>
+              <th className="px-2 py-3 text-center w-10">PDF</th>
+            </tr>
+            <tr className="bg-slate-100 text-slate-500 text-[10px] border-b border-slate-200">
+              <td className="sticky left-0 bg-slate-100 z-20 px-3 py-1.5" />
+              <td className="sticky left-10 bg-slate-100 z-20 px-4 py-1.5 font-semibold text-slate-600 text-xs">Maksimal ball →</td>
+              {DIRECTIONS.map(d => (
+                <td key={d.key} className="px-2 py-1.5 text-center font-bold text-slate-700">{d.max}</td>
+              ))}
+              <td className="px-3 py-1.5 text-center font-bold text-slate-800 bg-slate-200">{MAX_TOTAL}</td>
+              <td />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, idx) => {
+              const rank = idx + 1
+              const c = rowStyle(rank, rows.length)
               return (
-                <div key={d.id} className={`rounded-lg p-4 border ${s.row} hover:shadow-md transition-all`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${s.badge}`}>{getRankLabel(i)}</span>
-                        <h3 className="text-lg font-semibold text-slate-900 truncate">{d.name}</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-slate-900 mb-3">Jami: {d.total} ball</p>
-                      <div className="grid grid-cols-5 gap-2">
-                        {d.scores.map((score, ci) => (
-                          <div key={ci} className="bg-white/60 rounded p-2 text-center">
-                            <p className="text-xs text-slate-600 truncate">{CATEGORY_NAMES[ci].substring(0, 12)}</p>
-                            <p className="text-sm font-bold text-slate-900">{score}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button onClick={() => setPreview(d)} className="p-2 hover:bg-blue-100 rounded text-blue-600"><Eye className="w-5 h-5" /></button>
-                      <button onClick={() => generatePDF(d, MAHALLALAR)} className="p-2 hover:bg-blue-100 rounded text-blue-600"><Download className="w-5 h-5" /></button>
-                    </div>
-                  </div>
-                </div>
+                <tr key={row.id} className={`border-t border-slate-100 transition-colors ${c.row}`}>
+                  <td className={`sticky left-0 z-10 px-3 py-2.5 text-center ${c.row}`}>
+                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${c.badge}`}>
+                      {rank}
+                    </span>
+                  </td>
+                  <td className={`sticky left-10 z-10 px-4 py-2.5 font-semibold text-slate-800 whitespace-nowrap ${c.row}`}>
+                    {row.name} MFY
+                  </td>
+                  {row.scores.map((score, i) => (
+                    <td key={i} className="px-2 py-2.5 text-center text-sm">
+                      <ScoreCell score={score} max={DIRECTIONS[i].max} />
+                    </td>
+                  ))}
+                  <td className="px-3 py-2.5 text-center bg-white/40">
+                    <span className="font-bold text-slate-900">{row.total}</span>
+                    <div className="text-[10px] text-slate-400">{pct(row.total, MAX_TOTAL)}%</div>
+                  </td>
+                  <td className="px-2 py-2.5 text-center">
+                    <button
+                      onClick={() => generatePDF(row, rows)}
+                      className="p-1.5 rounded hover:bg-blue-100 text-blue-500 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
               )
             })}
-          </div>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─── Yo'nalish bo'yicha reyting ──────────────────────────────────────────────
+function YonalishReyting({ rows }) {
+  const [selIdx, setSelIdx] = useState(0)
+  if (!rows.length) return <p className="text-slate-400 text-sm py-8 text-center">Ma'lumot yo'q</p>
+
+  const dir = DIRECTIONS[selIdx]
+  const sorted = [...rows].sort((a, b) => b.scores[selIdx] - a.scores[selIdx])
+  const totalScore = rows.reduce((s, r) => s + r.scores[selIdx], 0)
+  const fullCount = rows.filter(r => r.scores[selIdx] >= dir.max).length
+
+  return (
+    <div className="space-y-5">
+      {/* Yo'nalish tugmalari */}
+      <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Yo'nalish tanlang</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {DIRECTIONS.map((d, i) => (
+            <button
+              key={d.key}
+              onClick={() => setSelIdx(i)}
+              className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all text-left ${
+                selIdx === i
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+              }`}
+            >
+              <div>{d.short}</div>
+              <div className={`text-[10px] mt-0.5 ${selIdx === i ? 'text-blue-200' : 'text-slate-400'}`}>max: {d.max}</div>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Yo'nalish bo'yicha */}
-      {activeTab === 'yonalish' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm font-semibold text-slate-700 mb-3">Yo'nalish tanlang:</p>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {CATEGORY_NAMES.map((name, i) => (
-                <button key={i} onClick={() => setSelectedCat(i)}
-                  className={`px-3 py-2 rounded text-sm font-medium transition-colors ${selectedCat === i ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Statistika */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
+          <p className="text-xs text-slate-500">Tanlangan yo'nalish</p>
+          <p className="text-base font-bold text-slate-800 mt-1 leading-tight">{dir.label}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <p className="text-xs text-slate-500">O'rtacha ball</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{(totalScore / rows.length).toFixed(1)}</p>
+          <p className="text-xs text-slate-400">/ {dir.max}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <p className="text-xs text-slate-500">Bajarilish</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{pct(totalScore, dir.max * rows.length)}%</p>
+          <p className="text-xs text-slate-400">{totalScore} / {dir.max * rows.length}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+          <p className="text-xs text-slate-500">To'liq bajardi</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">{fullCount}</p>
+          <p className="text-xs text-slate-400">/ {rows.length} ta MFY</p>
+        </div>
+      </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div><p className="text-sm text-slate-600 font-medium">Bajarilish %</p><p className="text-3xl font-bold text-blue-600">{catStats.pct}%</p></div>
-              <div><p className="text-sm text-slate-600 font-medium">O'rtacha Ball</p><p className="text-3xl font-bold text-slate-900">{catStats.avg}</p></div>
-              <div><p className="text-sm text-slate-600 font-medium">Jami</p><p className="text-3xl font-bold text-green-600">{catStats.scored}/{catStats.maxPossible}</p></div>
-              <div><p className="text-sm text-slate-600 font-medium">To'liq bajarildi</p><p className="text-3xl font-bold text-emerald-600">{catStats.completed}/{catStats.total}</p></div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">{CATEGORY_NAMES[selectedCat]} — Reyting</h3>
-            <div className="space-y-3">
-              {sortedByCat.map((d, i) => {
-                const s = getRankStyle(i, sortedByCat.length)
-                return (
-                  <div key={d.id} className={`rounded-lg p-4 border ${s.row} hover:shadow-md transition-all`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${s.badge}`}>{getRankLabel(i)}</span>
-                        <h4 className="text-lg font-semibold text-slate-900">{d.name}</h4>
-                      </div>
-                      <p className="text-2xl font-bold text-slate-900">{d.scores[selectedCat]} ball</p>
+      {/* Reyting ro'yxati */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <h3 className="font-semibold text-slate-800">{dir.label} — Reyting</h3>
+          <span className="text-xs text-slate-500">{rows.length} ta MFY</span>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {sorted.map((row, idx) => {
+            const rank = idx + 1
+            const c = rowStyle(rank, sorted.length)
+            const p = pct(row.scores[selIdx], dir.max)
+            return (
+              <div key={row.id} className={`flex items-center gap-4 px-5 py-3 ${c.row} transition-colors`}>
+                <span className={`flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${c.badge}`}>
+                  {rank}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-800 truncate">{row.name} MFY</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex-1 bg-slate-200 rounded-full h-1.5">
+                      <div className={`h-1.5 rounded-full transition-all ${c.bar}`} style={{ width: `${p}%` }} />
                     </div>
+                    <span className="text-xs text-slate-500 flex-shrink-0 w-8 text-right">{p}%</span>
                   </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Modal */}
-      {preview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h3 className="font-semibold text-slate-900">{preview.name} — Tafsiliy Reyting</h3>
-              <button onClick={() => setPreview(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="flex-1 overflow-auto p-4 space-y-3">
-              <div className="bg-blue-50 p-3 rounded">
-                <p className="text-sm text-slate-600">Jami Ballar</p>
-                <p className="text-2xl font-bold text-blue-600">{preview.total} / {MAX_SCORES.reduce((a, b) => a + b, 0)}</p>
-              </div>
-              <div className="bg-slate-50 p-3 rounded">
-                <p className="text-sm font-semibold text-slate-700 mb-2">10 Yo'nalish bo'yicha</p>
-                <div className="space-y-2">
-                  {preview.scores.map((score, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600">{CATEGORY_NAMES[i]}</span>
-                      <span className="font-semibold text-slate-900">{score} / {MAX_SCORES[i]}</span>
-                    </div>
-                  ))}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className="text-xl font-bold text-slate-900">{row.scores[selIdx]}</span>
+                  <span className="text-sm text-slate-400"> / {dir.max}</span>
                 </div>
               </div>
-              <div className="bg-green-50 p-3 rounded">
-                <p className="text-sm text-slate-600">O'rin</p>
-                <p className="text-lg font-bold text-green-600">
-                  {MAHALLALAR.findIndex(d => d.id === preview.id) + 1} / {MAHALLALAR.length}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2 p-4 border-t border-slate-200">
-              <button onClick={() => setPreview(null)} className="flex-1 px-4 py-2 bg-slate-100 border border-slate-300 rounded text-sm font-medium text-slate-700 hover:bg-slate-200">Yopish</button>
-              <button onClick={() => generatePDF(preview, MAHALLALAR)} className="flex-1 px-4 py-2 bg-blue-600 rounded text-sm font-medium text-white hover:bg-blue-700">PDF Yuklash</button>
-            </div>
-          </div>
+            )
+          })}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Asosiy komponent ─────────────────────────────────────────────────────────
+export function DistrictsRanking({ initialTab = 'umumiy', month, hideTabs = false }) {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState(initialTab)
+
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab])
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    api.getDistrictsRanking(month)
+      .then(setRows)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [month])
+
+  return (
+    <div className="space-y-5 p-5">
+      {!hideTabs && (
+        <div className="flex gap-2">
+          {[['umumiy', 'Umumiy Reyting'], ['yonalish', "Yo'nalishlar Bo'yicha"]].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === key
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-4 text-sm">{error}</div>
+      ) : activeTab === 'umumiy' ? (
+        <UmumiyReyting rows={rows} />
+      ) : (
+        <YonalishReyting rows={rows} />
       )}
     </div>
   )

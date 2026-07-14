@@ -33,18 +33,23 @@ class LoginView(APIView):
                 {'error': "Username yoki parol noto'g'ri"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        if not user.is_staff:
-            return Response(
-                {'error': 'Faqat adminlar kirishi mumkin'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         login(request, user)
+
+        profile = None
+        try:
+            profile = user.kpi_profile
+        except Exception:
+            pass
+
         return Response({
             'id': user.id,
             'username': user.username,
             'full_name': user.get_full_name(),
             'is_superuser': user.is_superuser,
+            'is_staff': user.is_staff,
+            'mahalla_name': profile.mahalla_name if profile else None,
+            'district': profile.district if profile else None,
         })
 
 
@@ -57,13 +62,22 @@ class LogoutView(APIView):
 
 
 class MeView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = request.user
+        profile = None
+        try:
+            profile = user.kpi_profile
+        except Exception:
+            pass
+
         return Response({
             'id': user.id,
             'username': user.username,
             'full_name': user.get_full_name(),
             'is_superuser': user.is_superuser,
+            'is_staff': user.is_staff,
+            'mahalla_name': profile.mahalla_name if profile else None,
+            'district': profile.district if profile else None,
         })

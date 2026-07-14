@@ -39,7 +39,7 @@ class KPITask(BaseModel):
 
     # Umumiy majburiy maydonlar
     leader = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='tasks', verbose_name="Yetakchi")
-    direction = models.CharField(max_length=50, choices=DIRECTION_CHOICES, verbose_name="Yo'nalish turi")
+    direction = models.CharField(max_length=50, verbose_name="Yo'nalish turi")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='sariq', verbose_name="Status")
     score = models.FloatField(default=0.0, verbose_name="Berilgan ball")
     admin_comment = models.TextField(blank=True, null=True, verbose_name="Admin izohi (Rad etish sababi)")

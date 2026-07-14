@@ -1,33 +1,39 @@
+import calendar
+from datetime import date as date_type
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Avg
-from src.core.models import KPITask
+from src.core.models import KPITask, KPIDirection
 from .base import BaseAdminAPIView
-
-MAX_SCORES = {
-    '1_ijro': 20, '2_balans': 5, '3_bandlik': 15, '4_bosh_vaqt': 15,
-    '5_profilaktika': 10, '6_murojaat': 5, '7_brend': 10, '8_talim': 5,
-    '9_startap': 5, '10_nomenklatura': 10,
-}
 
 
 class AdminDashboardStatsView(BaseAdminAPIView):
     """10 ta yo'nalish bo'yicha reyting foizlarini qaytaradi.
-    Query param: ?month=YYYY-MM-DD (ixtiyoriy)
+    Query param: ?month=YYYY-MM-01 (ixtiyoriy)
     """
 
     def get(self, request):
         month = request.query_params.get('month')
+        directions = KPIDirection.objects.filter(is_active=True).order_by('order')
 
         stats = []
-        for dir_key, dir_label in KPITask.DIRECTION_CHOICES:
-            tasks = KPITask.objects.filter(direction=dir_key)
-            if month:
-                tasks = tasks.filter(month=month)
+        for d in directions:
+            tasks = KPITask.objects.filter(direction=d.key)
 
-            max_score = MAX_SCORES.get(dir_key, 10)
+            if month:
+                if d.key == '1_ijro':
+                    try:
+                        dt = date_type.fromisoformat(month)
+                        last_day = calendar.monthrange(dt.year, dt.month)[1]
+                        end = date_type(dt.year, dt.month, last_day)
+                        tasks = tasks.filter(month__gte=dt, month__lte=end)
+                    except ValueError:
+                        tasks = tasks.none()
+                else:
+                    tasks = tasks.filter(month=month)
+
             avg_score = tasks.filter(status='yashil').aggregate(Avg('score'))['score__avg'] or 0
-            percentage = round((avg_score / max_score) * 100, 1) if max_score else 0
+            percentage = round((avg_score / d.max_score) * 100, 1) if d.max_score else 0
 
             if percentage >= 80:
                 indicator = 'yashil'
@@ -37,9 +43,9 @@ class AdminDashboardStatsView(BaseAdminAPIView):
                 indicator = 'qizil'
 
             stats.append({
-                'direction': dir_key,
-                'label': dir_label,
-                'max_score': max_score,
+                'direction': d.key,
+                'label': d.label,
+                'max_score': d.max_score,
                 'avg_score': round(avg_score, 2),
                 'percentage': percentage,
                 'indicator': indicator,

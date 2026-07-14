@@ -1,12 +1,38 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Tailwind preflight allaqachon margin/padding/box-sizing resetini qiladi.
+   * { margin:0; padding:0 } ni bu yerga qo'yish Tailwind utility classlarini
+   (px-6, py-4, p-8 va h.k.) butunlay o'chirib yuboradi — shuning uchun olib tashlandi. */
 
 body {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc;
+}
+
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+@media (min-width: 480px) {
+  .container {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 3.5rem;
+    padding-right: 3.5rem;
+  }
 }

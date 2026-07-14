@@ -1,8 +1,11 @@
 from config.settings.base import *
 
 import os
+from pathlib import Path
 
 BASE_DIR = BASE_DIR.parent
+
+FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'
 
 EXTERNAL_APPS = [
     "debug_toolbar",
@@ -32,7 +35,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [FRONTEND_DIST],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

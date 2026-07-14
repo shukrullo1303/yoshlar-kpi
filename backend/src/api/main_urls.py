@@ -10,6 +10,12 @@ urlpatterns = [
     # Admin API endpoints
     path('admin/', include('src.api.urls.admin')),
 
+    # User (MFY) API endpoints
+    path('user/', include('src.api.urls.user')),
+
+    # Directions (yo'nalishlar ro'yxati)
+    path('directions/', include('src.api.urls.directions')),
+
     # Health check endpoint
     path('health/', include('src.api.urls.health')),
 
