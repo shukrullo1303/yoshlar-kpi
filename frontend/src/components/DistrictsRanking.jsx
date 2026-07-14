@@ -23,15 +23,15 @@ function pct(score, max) {
 }
 
 function rowStyle(rank, total) {
-  if (rank <= 3)         return { row: 'bg-emerald-50 hover:bg-emerald-100', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-300', bar: 'bg-emerald-500' }
-  if (rank > total - 3) return { row: 'bg-red-50 hover:bg-red-100',         badge: 'bg-red-100 text-red-700 border border-red-300',             bar: 'bg-red-400'     }
-  return                        { row: 'bg-amber-50 hover:bg-amber-100',     badge: 'bg-amber-100 text-amber-700 border border-amber-300',       bar: 'bg-amber-400'   }
+  if (rank <= 3)         return { row: 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-300', bar: 'bg-emerald-500' }
+  if (rank > total - 3) return { row: 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30',                 badge: 'bg-red-100 text-red-700 border border-red-300',             bar: 'bg-red-400'     }
+  return                        { row: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30',         badge: 'bg-amber-100 text-amber-700 border border-amber-300',       bar: 'bg-amber-400'   }
 }
 
 function ScoreCell({ score, max }) {
   const p = pct(score, max)
-  const cls = p >= 80 ? 'text-emerald-700 font-semibold' : p >= 50 ? 'text-amber-700' : 'text-red-600'
-  return <span className={cls}>{score > 0 ? score : <span className="text-slate-300">—</span>}</span>
+  const cls = p >= 80 ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : p >= 50 ? 'text-amber-700 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
+  return <span className={cls}>{score > 0 ? score : <span className="text-slate-300 dark:text-slate-600">—</span>}</span>
 }
 
 function generatePDF(row, allRows) {
@@ -59,14 +59,14 @@ function UmumiyReyting({ rows }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-4 text-xs font-medium text-slate-600 flex-wrap pb-1">
+      <div className="flex gap-4 text-xs font-medium text-slate-600 dark:text-slate-300 flex-wrap pb-1">
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-400 inline-block" />Top 3 — eng yaxshi</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 inline-block" />O'rtacha</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-400 inline-block" />Eng past 3</span>
         <span className="flex items-center gap-1.5 ml-auto text-slate-400">Jami max: {MAX_TOTAL} ball</span>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <table className="w-full text-sm border-collapse min-w-max">
           <thead>
             <tr className="bg-slate-800 text-white text-xs">
@@ -84,13 +84,13 @@ function UmumiyReyting({ rows }) {
               </th>
               <th className="px-2 py-3 text-center w-10">PDF</th>
             </tr>
-            <tr className="bg-slate-100 text-slate-500 text-[10px] border-b border-slate-200">
-              <td className="sticky left-0 bg-slate-100 z-20 px-3 py-1.5" />
-              <td className="sticky left-10 bg-slate-100 z-20 px-4 py-1.5 font-semibold text-slate-600 text-xs">Maksimal ball →</td>
+            <tr className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-[10px] border-b border-slate-200 dark:border-slate-600">
+              <td className="sticky left-0 bg-slate-100 dark:bg-slate-700 z-20 px-3 py-1.5" />
+              <td className="sticky left-10 bg-slate-100 dark:bg-slate-700 z-20 px-4 py-1.5 font-semibold text-slate-600 dark:text-slate-300 text-xs">Maksimal ball →</td>
               {DIRECTIONS.map(d => (
-                <td key={d.key} className="px-2 py-1.5 text-center font-bold text-slate-700">{d.max}</td>
+                <td key={d.key} className="px-2 py-1.5 text-center font-bold text-slate-700 dark:text-slate-200">{d.max}</td>
               ))}
-              <td className="px-3 py-1.5 text-center font-bold text-slate-800 bg-slate-200">{MAX_TOTAL}</td>
+              <td className="px-3 py-1.5 text-center font-bold text-slate-800 dark:text-slate-100 bg-slate-200 dark:bg-slate-600">{MAX_TOTAL}</td>
               <td />
             </tr>
           </thead>
@@ -99,28 +99,31 @@ function UmumiyReyting({ rows }) {
               const rank = idx + 1
               const c = rowStyle(rank, rows.length)
               return (
-                <tr key={row.id} className={`border-t border-slate-100 transition-colors ${c.row}`}>
+                <tr key={row.id} className={`border-t border-slate-100 dark:border-slate-700 transition-colors ${c.row}`}>
                   <td className={`sticky left-0 z-10 px-3 py-2.5 text-center ${c.row}`}>
                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${c.badge}`}>
                       {rank}
                     </span>
                   </td>
-                  <td className={`sticky left-10 z-10 px-4 py-2.5 font-semibold text-slate-800 whitespace-nowrap ${c.row}`}>
+                  <td className={`sticky left-10 z-10 px-4 py-2.5 font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap ${c.row}`}>
                     {row.name} MFY
+                    {row.full_name && (
+                      <span className="block text-xs text-slate-400 font-normal">{row.full_name}</span>
+                    )}
                   </td>
                   {row.scores.map((score, i) => (
                     <td key={i} className="px-2 py-2.5 text-center text-sm">
                       <ScoreCell score={score} max={DIRECTIONS[i].max} />
                     </td>
                   ))}
-                  <td className="px-3 py-2.5 text-center bg-white/40">
-                    <span className="font-bold text-slate-900">{row.total}</span>
+                  <td className="px-3 py-2.5 text-center bg-white/40 dark:bg-slate-800/40">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{row.total}</span>
                     <div className="text-[10px] text-slate-400">{pct(row.total, MAX_TOTAL)}%</div>
                   </td>
                   <td className="px-2 py-2.5 text-center">
                     <button
                       onClick={() => generatePDF(row, rows)}
-                      className="p-1.5 rounded hover:bg-blue-100 text-blue-500 transition-colors"
+                      className="p-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition-colors"
                     >
                       <Download className="w-3.5 h-3.5" />
                     </button>
@@ -148,8 +151,8 @@ function YonalishReyting({ rows }) {
   return (
     <div className="space-y-5">
       {/* Yo'nalish tugmalari */}
-      <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Yo'nalish tanlang</p>
+      <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Yo'nalish tanlang</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {DIRECTIONS.map((d, i) => (
             <button
@@ -158,7 +161,7 @@ function YonalishReyting({ rows }) {
               className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all text-left ${
                 selIdx === i
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:border-blue-300 hover:text-blue-600'
               }`}
             >
               <div>{d.short}</div>
@@ -170,34 +173,34 @@ function YonalishReyting({ rows }) {
 
       {/* Statistika */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
-          <p className="text-xs text-slate-500">Tanlangan yo'nalish</p>
-          <p className="text-base font-bold text-slate-800 mt-1 leading-tight">{dir.label}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm col-span-2 sm:col-span-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Tanlangan yo'nalish</p>
+          <p className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1 leading-tight">{dir.label}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <p className="text-xs text-slate-500">O'rtacha ball</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p className="text-xs text-slate-500 dark:text-slate-400">O'rtacha ball</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{(totalScore / rows.length).toFixed(1)}</p>
           <p className="text-xs text-slate-400">/ {dir.max}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <p className="text-xs text-slate-500">Bajarilish</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{pct(totalScore, dir.max * rows.length)}%</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Bajarilish</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{pct(totalScore, dir.max * rows.length)}%</p>
           <p className="text-xs text-slate-400">{totalScore} / {dir.max * rows.length}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-          <p className="text-xs text-slate-500">To'liq bajardi</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p className="text-xs text-slate-500 dark:text-slate-400">To'liq bajardi</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">{fullCount}</p>
           <p className="text-xs text-slate-400">/ {rows.length} ta MFY</p>
         </div>
       </div>
 
       {/* Reyting ro'yxati */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800">{dir.label} — Reyting</h3>
-          <span className="text-xs text-slate-500">{rows.length} ta MFY</span>
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100">{dir.label} — Reyting</h3>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{rows.length} ta MFY</span>
         </div>
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
           {sorted.map((row, idx) => {
             const rank = idx + 1
             const c = rowStyle(rank, sorted.length)
@@ -208,16 +211,19 @@ function YonalishReyting({ rows }) {
                   {rank}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 truncate">{row.name} MFY</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
+                    {row.name} MFY
+                    {row.full_name && <span className="text-slate-400 font-normal text-xs ml-1.5">· {row.full_name}</span>}
+                  </p>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <div className="flex-1 bg-slate-200 rounded-full h-1.5">
+                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
                       <div className={`h-1.5 rounded-full transition-all ${c.bar}`} style={{ width: `${p}%` }} />
                     </div>
-                    <span className="text-xs text-slate-500 flex-shrink-0 w-8 text-right">{p}%</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 w-8 text-right">{p}%</span>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <span className="text-xl font-bold text-slate-900">{row.scores[selIdx]}</span>
+                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{row.scores[selIdx]}</span>
                   <span className="text-sm text-slate-400"> / {dir.max}</span>
                 </div>
               </div>
@@ -230,11 +236,15 @@ function YonalishReyting({ rows }) {
 }
 
 // ─── Asosiy komponent ─────────────────────────────────────────────────────────
-export function DistrictsRanking({ initialTab = 'umumiy', month, hideTabs = false }) {
+export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, monthTo, hideTabs = false }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState(initialTab)
+
+  // Support both old `month` prop and new range props
+  const resolvedFrom = monthFrom || month || null
+  const resolvedTo = monthTo || month || null
 
   useEffect(() => {
     setActiveTab(initialTab)
@@ -243,14 +253,14 @@ export function DistrictsRanking({ initialTab = 'umumiy', month, hideTabs = fals
   useEffect(() => {
     setLoading(true)
     setError(null)
-    api.getDistrictsRanking(month)
+    api.getDistrictsRanking(resolvedFrom, resolvedTo)
       .then(setRows)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [month])
+  }, [resolvedFrom, resolvedTo])
 
   return (
-    <div className="space-y-5 p-5">
+    <div className="space-y-5 p-5 dark:text-slate-100">
       {!hideTabs && (
         <div className="flex gap-2">
           {[['umumiy', 'Umumiy Reyting'], ['yonalish', "Yo'nalishlar Bo'yicha"]].map(([key, label]) => (
@@ -260,7 +270,7 @@ export function DistrictsRanking({ initialTab = 'umumiy', month, hideTabs = fals
               className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === key
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}
             >
               {label}

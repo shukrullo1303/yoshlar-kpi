@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Tailwind preflight allaqachon margin/padding/box-sizing resetini qiladi.
    * { margin:0; padding:0 } ni bu yerga qo'yish Tailwind utility classlarini
@@ -6,6 +7,10 @@
 
 body {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8fafc;
+}
+body.dark-page {
+  background-color: #0f172a;
 }
 
 .container {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../services/api'
 
-export function LoginPage({ onLogin }) {
+export function LoginPage({ onLogin, darkMode, toggleDark }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -24,22 +24,33 @@ export function LoginPage({ onLogin }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 w-full max-w-md">
 
         {/* Header */}
-        <div className="px-10 pt-10 pb-8 text-center border-b border-slate-100">
+        <div className="px-10 pt-10 pb-8 text-center border-b border-slate-100 dark:border-slate-700">
+          <div className="flex justify-end mb-2">
+            {toggleDark && (
+              <button
+                onClick={toggleDark}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+                title={darkMode ? 'Light mode' : 'Dark mode'}
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
+            )}
+          </div>
           <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 text-white text-2xl font-black shadow-lg">
             Y
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Yoshlar KPI</h1>
-          <p className="text-slate-500 text-sm mt-2">Asaka tumani — MFY yoshlar yetakchilari</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Yoshlar KPI</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Asaka tumani — MFY yoshlar yetakchilari</p>
         </div>
 
         {/* Form */}
         <div className="px-10 py-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Foydalanuvchi nomi
               </label>
               <input
@@ -49,12 +60,12 @@ export function LoginPage({ onLogin }) {
                 required
                 autoFocus
                 placeholder="username"
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 placeholder-slate-400"
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Parol
               </label>
               <input
@@ -63,7 +74,7 @@ export function LoginPage({ onLogin }) {
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 placeholder-slate-400"
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 text-slate-900 dark:bg-slate-700 dark:text-white placeholder-slate-400 dark:placeholder-slate-400"
               />
             </div>
 

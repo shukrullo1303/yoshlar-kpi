@@ -35,9 +35,12 @@ export const api = {
   me: () => request('/auth/me/'),
 
   // Dashboard
-  getDashboardStats: (month) => {
-    const params = month ? `?month=${month}` : ''
-    return request(`/admin/dashboard/${params}`)
+  getDashboardStats: (monthFrom, monthTo) => {
+    const params = new URLSearchParams()
+    if (monthFrom) params.set('month_from', monthFrom)
+    if (monthTo) params.set('month_to', monthTo)
+    const qs = params.toString()
+    return request(`/admin/dashboard/${qs ? `?${qs}` : ''}`)
   },
   getSliderTasks: (direction, month, taskStatus = 'sariq') => {
     const params = new URLSearchParams()
@@ -68,9 +71,12 @@ export const api = {
     const params = month ? `?month=${month}` : ''
     return request(`/user/dashboard/${params}`)
   },
-  getDistrictsRanking: (month) => {
-    const params = month ? `?month=${month}` : ''
-    return request(`/admin/districts/${params}`)
+  getDistrictsRanking: (monthFrom, monthTo) => {
+    const params = new URLSearchParams()
+    if (monthFrom) params.set('month_from', monthFrom)
+    if (monthTo) params.set('month_to', monthTo)
+    const qs = params.toString()
+    return request(`/admin/districts/${qs ? `?${qs}` : ''}`)
   },
   getBulkScores: (direction, date) =>
     request(`/admin/bulk-score/?direction=${direction}&date=${date}`),
@@ -78,5 +84,28 @@ export const api = {
     request('/admin/bulk-score/', {
       method: 'POST',
       body: JSON.stringify({ direction, date, scores }),
+    }),
+  getMonthPlan: (direction, month) =>
+    request(`/admin/month-plan/?direction=${direction}&month=${month}`),
+  saveMonthPlan: (direction, month, target_count, plan_dates) =>
+    request('/admin/month-plan/', {
+      method: 'POST',
+      body: JSON.stringify({ direction, month, target_count, plan_dates }),
+    }),
+  bulkReviewTasks: (task_ids, action, score, adminComment) =>
+    request('/admin/bulk-review/', {
+      method: 'POST',
+      body: JSON.stringify({ task_ids, action, score, admin_comment: adminComment }),
+    }),
+  getMFYStatus: (direction, monthFrom, monthTo) => {
+    const params = new URLSearchParams({ direction })
+    if (monthFrom) params.set('month_from', monthFrom)
+    if (monthTo) params.set('month_to', monthTo)
+    return request(`/admin/mfy-status/?${params.toString()}`)
+  },
+  updateProfile: (first_name, last_name, old_password, new_password) =>
+    request('/user/profile/', {
+      method: 'POST',
+      body: JSON.stringify({ first_name, last_name, old_password, new_password }),
     }),
 }

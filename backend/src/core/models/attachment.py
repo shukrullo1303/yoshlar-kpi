@@ -6,6 +6,7 @@ class TaskAttachment(BaseModel):
     task = models.ForeignKey('KPITask', on_delete=models.CASCADE, related_name='attachments', verbose_name="Topshiriq")
     file = models.FileField(upload_to='kpi_uploads/%Y/%m/', verbose_name="Fayl yoki Rasm (PDF/JPG/PNG)")
     is_image = models.BooleanField(default=False, verbose_name="Bu rasmmi?")
+    photo_taken_at = models.DateTimeField(null=True, blank=True, verbose_name="Rasm olingan vaqt (EXIF)")
 
     def __str__(self):
         return f"{self.task.id}-topshiriq fayli"

@@ -8,6 +8,20 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [directions, setDirections] = useState([])
   const [authLoading, setAuthLoading] = useState(true)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark')
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+      document.body.classList.add('dark-page')
+    } else {
+      document.documentElement.classList.remove('dark')
+      document.body.classList.remove('dark-page')
+    }
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
+  const toggleDark = () => setDarkMode(prev => !prev)
 
   useEffect(() => {
     api.me()
@@ -37,12 +51,13 @@ export default function App() {
     return <LoginPage onLogin={u => {
       setUser(u)
       api.getDirections().then(setDirections).catch(() => {})
-    }} />
+    }} darkMode={darkMode} toggleDark={toggleDark} />
   }
 
   if (user.is_staff || user.is_superuser) {
-    return <AdminPanel user={user} directions={directions} onLogout={handleLogout} />
+    return <AdminPanel user={user} directions={directions} onLogout={handleLogout} darkMode={darkMode} toggleDark={toggleDark} />
   }
 
-  return <UserDashboard user={user} directions={directions} onLogout={handleLogout} />
+  return <UserDashboard user={user} directions={directions} onLogout={handleLogout} darkMode={darkMode} toggleDark={toggleDark}
+    onUserUpdate={() => api.me().then(setUser).catch(() => {})} />
 }

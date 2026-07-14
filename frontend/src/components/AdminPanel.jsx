@@ -1,20 +1,31 @@
 import { useState, useEffect } from 'react'
-import { BarChart2, Trophy, LogOut, Menu, X } from 'lucide-react'
+import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays } from 'lucide-react'
 import { api } from '../services/api'
 import { DistrictsRanking } from './DistrictsRanking'
 import { DailyScoreTable } from './DailyScoreTable'
 import { TaskSlider } from './TaskSlider'
+import { MonthPlanBar } from './MonthPlanBar'
+import { BrendReviewPanel } from './BrendReviewPanel'
+import { MFYStatusPanel } from './MFYStatusPanel'
 
-const NAV_UMUMIY = '__umumiy__'
+const NAV_UMUMIY   = '__umumiy__'
 const NAV_YONALISH = '__yonalish__'
 
-export function AdminPanel({ user, directions: directionsProp = [], onLogout }) {
-  const [month, setMonth] = useState('')
-  const [stats, setStats] = useState([])
-  const [nav, setNav] = useState('')
+function toMonthParam(val) {
+  return val ? `${val}-01` : null
+}
+
+export function AdminPanel({ user, directions: directionsProp = [], onLogout, darkMode, toggleDark }) {
+  const [monthFrom, setMonthFrom]                 = useState('')
+  const [monthTo, setMonthTo]                     = useState('')
+  const [stats, setStats]                         = useState([])
+  const [nav, setNav]                             = useState('')
+  const [subView, setSubView]                     = useState('tasks') // 'tasks' | 'plan' | 'mfy'
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
-  const activeMonthParam = month || null
+  const activeMonthFrom = toMonthParam(monthFrom)
+  const activeMonthTo   = toMonthParam(monthTo)
+  const activeMonth     = activeMonthFrom
 
   useEffect(() => {
     if (directionsProp.length > 0 && !nav) {
@@ -23,10 +34,10 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
   }, [directionsProp])
 
   useEffect(() => {
-    api.getDashboardStats(activeMonthParam)
+    api.getDashboardStats(activeMonthFrom, activeMonthTo || activeMonthFrom)
       .then(setStats)
       .catch(() => setStats([]))
-  }, [activeMonthParam])
+  }, [activeMonthFrom, activeMonthTo])
 
   const directions = directionsProp.map(d => {
     const stat = stats.find(s => s.direction === d.key)
@@ -40,64 +51,143 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
   })
 
   const activeDirection = directions.find(d => d.key === nav)
-  const totalPending = stats.reduce((s, d) => s + (d.sariq_count ?? 0), 0)
+  const totalPending    = stats.reduce((s, d) => s + (d.sariq_count ?? 0), 0)
 
   const handleNav = (key) => {
     setNav(key)
+    setSubView('tasks')
     setMobileSidebarOpen(false)
+  }
+
+  const clearMonths = () => { setMonthFrom(''); setMonthTo('') }
+
+  // Sub-tabs rendered for non-admin-scored directions
+  function SubTabs({ includeAdminScored = false }) {
+    const tabs = includeAdminScored
+      ? [
+          { key: 'tasks', label: 'Topshiriqlar' },
+          { key: 'mfy',   label: "MFYlar kesimida", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+        ]
+      : [
+          { key: 'tasks', label: 'Topshiriqlar' },
+          { key: 'plan',  label: "Reja qo'yish", icon: <CalendarDays className="w-3.5 h-3.5" /> },
+          { key: 'mfy',   label: "MFYlar kesimida", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+        ]
+    return (
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setSubView(t.key)}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              subView === t.key ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+    )
   }
 
   function renderMain() {
     if (!nav) return null
 
+    // Ranking views
     if (nav === NAV_UMUMIY || nav === NAV_YONALISH) {
       return (
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm">
           <DistrictsRanking
             initialTab={nav === NAV_UMUMIY ? 'umumiy' : 'yonalish'}
-            month={activeMonthParam}
+            monthFrom={activeMonthFrom}
+            monthTo={activeMonthTo || activeMonthFrom}
             hideTabs={true}
           />
         </div>
       )
     }
 
+    // Admin-scored directions (e.g. 1_ijro)
     if (activeDirection?.adminScored) {
       return (
         <div className="space-y-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-white">{activeDirection?.label}</h2>
-            <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
-              Admin tomonidan baholanadi (max {activeDirection?.maxScore} ball)
-            </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-white">{activeDirection?.label}</h2>
+              <p className="text-slate-400 text-sm mt-1">Admin tomonidan baholanadi (max {activeDirection?.maxScore} ball)</p>
+            </div>
+            <SubTabs includeAdminScored />
           </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm">
-            <DailyScoreTable
-              direction={nav}
-              maxScore={nav === '1_ijro' ? 1 : activeDirection?.maxScore}
-              month={activeMonthParam}
+          {subView === 'mfy' ? (
+            <MFYStatusPanel
+              directions={directions}
+              fixedDirection={nav}
+              monthFrom={activeMonthFrom}
+              monthTo={activeMonthTo || activeMonthFrom}
             />
-          </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+              <DailyScoreTable
+                direction={nav}
+                maxScore={activeDirection?.maxScore}
+                month={activeMonth}
+              />
+            </div>
+          )}
         </div>
       )
     }
 
+    // Regular (uploadable) directions
     return (
       <div className="space-y-4">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-white">{activeDirection?.label}</h2>
-          <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
-            Yuklangan materiallarni tekshirish va baholash — max {activeDirection?.maxScore} ball
-          </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-white">{activeDirection?.label}</h2>
+            <p className="text-slate-400 text-sm mt-1">
+              {subView === 'tasks' && `Materiallarni tekshirish — max ${activeDirection?.maxScore} ball`}
+              {subView === 'plan'  && 'Oylik reja va baholash sanalarini belgilash'}
+              {subView === 'mfy'   && 'MFYlar kesimida topshiriq holati'}
+            </p>
+          </div>
+          <SubTabs />
         </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <TaskSlider
-            key={nav}
+
+        {subView === 'plan' && (
+          <MonthPlanBar
             direction={nav}
+            month={activeMonth}
             maxScore={activeDirection?.maxScore ?? 0}
-            month={activeMonthParam}
           />
-        </div>
+        )}
+
+        {subView === 'mfy' && (
+          <MFYStatusPanel
+            directions={directions}
+            fixedDirection={nav}
+            monthFrom={activeMonthFrom}
+            monthTo={activeMonthTo || activeMonthFrom}
+          />
+        )}
+
+        {subView === 'tasks' && (
+          <>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+              {nav === '7_brend' ? (
+                <BrendReviewPanel
+                  key={nav}
+                  direction={nav}
+                  maxScore={activeDirection?.maxScore ?? 0}
+                  month={activeMonth}
+                />
+              ) : (
+                <TaskSlider
+                  key={nav}
+                  direction={nav}
+                  maxScore={activeDirection?.maxScore ?? 0}
+                  month={activeMonth}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
     )
   }
@@ -108,13 +198,10 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
         <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2 px-2">10 ta yo'nalish</p>
         <nav className="space-y-0.5">
           {directions.map(d => (
-            <button
-              key={d.key}
-              onClick={() => handleNav(d.key)}
+            <button key={d.key} onClick={() => handleNav(d.key)}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 nav === d.key ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-              }`}
-            >
+              }`}>
               <span className="truncate text-left leading-snug">{d.label}</span>
               {d.pending > 0 && (
                 <span className={`ml-2 flex-shrink-0 text-xs font-bold rounded-full min-w-5 h-5 px-1.5 flex items-center justify-center ${
@@ -129,20 +216,16 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
       <div className="pt-4 border-t border-slate-800">
         <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2 px-2">Reytinglar</p>
         <nav className="space-y-0.5">
-          <button
-            onClick={() => handleNav(NAV_UMUMIY)}
+          <button onClick={() => handleNav(NAV_UMUMIY)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               nav === NAV_UMUMIY ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
+            }`}>
             <Trophy className="w-4 h-4 flex-shrink-0" /> Umumiy reyting
           </button>
-          <button
-            onClick={() => handleNav(NAV_YONALISH)}
+          <button onClick={() => handleNav(NAV_YONALISH)}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               nav === NAV_YONALISH ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
+            }`}>
             <BarChart2 className="w-4 h-4 flex-shrink-0" /> Yo'nalish bo'yicha
           </button>
         </nav>
@@ -154,13 +237,10 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Header */}
       <div className="border-b border-slate-800 bg-slate-900 flex-shrink-0">
-        <div className="container py-4 flex items-center justify-between gap-3">
+        <div className="container py-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {/* Hamburger — only on mobile */}
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 flex-shrink-0"
-            >
+            <button onClick={() => setMobileSidebarOpen(true)}
+              className="lg:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 flex-shrink-0">
               <Menu className="w-5 h-5" />
             </button>
             <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">⚙</span>
@@ -172,30 +252,37 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
             )}
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-slate-400 hidden sm:block">Oy:</label>
-              <input
-                type="month"
-                className="text-xs sm:text-sm bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 w-32 sm:w-auto"
-                onChange={e => setMonth(e.target.value ? `${e.target.value}-01` : '')}
-              />
-              {month && (
-                <button onClick={() => setMonth('')} className="text-xs text-slate-500 hover:text-slate-300 underline hidden sm:block">
-                  Tozalash
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5">
+              <span className="text-xs text-slate-400 hidden sm:block">Dan:</span>
+              <input type="month" value={monthFrom} onChange={e => setMonthFrom(e.target.value)}
+                className="text-xs sm:text-sm bg-transparent text-slate-200 focus:outline-none w-28" />
+              <span className="text-slate-600">—</span>
+              <span className="text-xs text-slate-400 hidden sm:block">Gacha:</span>
+              <input type="month" value={monthTo} min={monthFrom} onChange={e => setMonthTo(e.target.value)}
+                className="text-xs sm:text-sm bg-transparent text-slate-200 focus:outline-none w-28" />
+              {(monthFrom || monthTo) && (
+                <button onClick={clearMonths} className="text-slate-500 hover:text-slate-300 ml-1">
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
+
             <span className="text-sm text-slate-400 hidden md:block truncate max-w-32">
               {user.full_name || user.username}
               {user.is_superuser && (
                 <span className="ml-2 text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded-full">Superadmin</span>
               )}
             </span>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-red-400 transition-colors"
-            >
+
+            <button onClick={toggleDark}
+              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"
+              title={darkMode ? 'Light mode' : 'Dark mode'}>
+              {darkMode ? '☀️' : '🌙'}
+            </button>
+
+            <button onClick={onLogout}
+              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-red-400 transition-colors">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Chiqish</span>
             </button>
@@ -207,16 +294,12 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setMobileSidebarOpen(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <aside
-            className="absolute left-0 top-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-4 overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-slate-900 border-r border-slate-800 p-4 overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <span className="text-sm font-bold text-slate-100">Yo'nalishlar</span>
-              <button
-                onClick={() => setMobileSidebarOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400"
-              >
+              <button onClick={() => setMobileSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -226,12 +309,9 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout }) 
       )}
 
       <div className="flex flex-1 container py-6 gap-6 items-start">
-        {/* Desktop sidebar */}
         <aside className="hidden lg:block w-64 flex-shrink-0 space-y-5 sticky top-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
           {sidebarContent}
         </aside>
-
-        {/* Main */}
         <main className="flex-1 min-w-0 overflow-y-auto max-h-[calc(100vh-5rem)]">
           {renderMain()}
         </main>

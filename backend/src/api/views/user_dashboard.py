@@ -4,7 +4,7 @@ from django.db.models import Sum
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
-from src.core.models import KPITask, Profile, KPIDirection
+from src.core.models import KPITask, Profile, KPIDirection, KPIMonthPlan
 
 
 def _month_qs(qs, dir_key, month_str):
@@ -22,7 +22,7 @@ def _month_qs(qs, dir_key, month_str):
 
 
 class UserDashboardView(APIView):
-    """Oddiy MFY user uchun — o'z KPI ballari, topshiriqlari va reytingi."""
+    """Oddiy MFY user uchun — o'z KPI ballari, topshiriqlari, reytingi va rejalari."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -33,6 +33,12 @@ class UserDashboardView(APIView):
 
         month = request.query_params.get('month')
         directions = list(KPIDirection.objects.filter(is_active=True).order_by('order'))
+
+        # Fetch all plans for the current month in one query
+        plan_map = {}
+        if month:
+            plans = KPIMonthPlan.objects.filter(month=month)
+            plan_map = {p.direction_key: p.target_count for p in plans}
 
         directions_data = []
         total_score = 0.0
@@ -45,6 +51,10 @@ class UserDashboardView(APIView):
 
             approved_score = yashil_qs.aggregate(Sum('score'))['score__sum'] or 0.0
             total_score += approved_score
+
+            # Plan info
+            target = plan_map.get(d.key)
+            max_per_item = round(d.max_score / target, 2) if target and target > 0 else None
 
             directions_data.append({
                 'direction': d.key,
@@ -59,6 +69,8 @@ class UserDashboardView(APIView):
                 'is_uploadable': d.is_uploadable,
                 'info': d.info,
                 'how': d.how,
+                'plan_target': target,
+                'plan_max_per_item': max_per_item,
             })
 
         # Reyting hisoblash

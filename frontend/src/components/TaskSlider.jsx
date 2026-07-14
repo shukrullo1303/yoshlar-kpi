@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Loader2, FileText, Download } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Loader2, FileText, Download, Target } from 'lucide-react'
 import { api } from '../services/api'
 
 function isImage(url) {
@@ -15,14 +15,28 @@ function FilePreview({ file }) {
   const name = decodeURIComponent(url.split('/').pop())
 
   if (isImage(url)) {
+    const takenAt = file.photo_taken_at
+    const takenDate = takenAt ? new Date(takenAt) : null
+    const now = new Date()
+    const daysDiff = takenDate ? Math.floor((now - takenDate) / 86400000) : null
+    const isOld = daysDiff !== null && daysDiff > 30
     return (
-      <div className="rounded-xl overflow-hidden border border-slate-200">
-        <img src={url} alt={name} className="w-full max-h-96 object-contain bg-slate-50" />
-        <div className="px-3 py-2 bg-white border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs text-slate-500 truncate">{name}</span>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex-shrink-0 ml-2 flex items-center gap-1">
-            <Download className="w-3.5 h-3.5" /> Yuklab olish
-          </a>
+      <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600">
+        <img src={url} alt={name} className="w-full max-h-96 object-contain bg-slate-50 dark:bg-slate-900" />
+        <div className="px-3 py-2 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{name}</span>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline flex-shrink-0 ml-2 flex items-center gap-1">
+              <Download className="w-3.5 h-3.5" /> Yuklab olish
+            </a>
+          </div>
+          {takenDate && (
+            <div className={`text-xs flex items-center gap-1 ${isOld ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
+              📷 Olingan: {takenDate.toLocaleDateString('uz-UZ')}
+              {isOld && ` — ${daysDiff} kun oldin (eski rasm!)`}
+            </div>
+          )}
         </div>
       </div>
     )
@@ -30,11 +44,19 @@ function FilePreview({ file }) {
 
   if (isPdf(url)) {
     return (
-      <div className="rounded-xl border border-slate-200 overflow-hidden">
-        <iframe src={url} className="w-full h-96" title={name} />
-        <div className="px-3 py-2 bg-white border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs text-slate-500 truncate">{name}</span>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex-shrink-0 ml-2 flex items-center gap-1">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <object
+          data={url}
+          type="application/pdf"
+          className="w-full bg-slate-100 dark:bg-slate-900"
+          style={{ height: '500px' }}
+        >
+          <embed src={url} type="application/pdf" style={{ width: '100%', height: '500px' }} />
+        </object>
+        <div className="px-3 py-2 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{name}</span>
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="text-xs text-blue-600 hover:underline flex-shrink-0 ml-2 flex items-center gap-1">
             <Download className="w-3.5 h-3.5" /> Yuklab olish
           </a>
         </div>
@@ -43,12 +65,13 @@ function FilePreview({ file }) {
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900">
       <FileText className="w-8 h-8 text-slate-400 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-700 truncate">{name}</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{name}</p>
       </div>
-      <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline flex-shrink-0">
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="flex items-center gap-1 text-xs text-blue-600 hover:underline flex-shrink-0">
         <Download className="w-3.5 h-3.5" /> Yuklab olish
       </a>
     </div>
@@ -59,8 +82,8 @@ function InfoRow({ label, value }) {
   if (!value) return null
   return (
     <div className="flex gap-3">
-      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-32 flex-shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-slate-800">{String(value)}</span>
+      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-32 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-slate-800 dark:text-slate-200">{String(value)}</span>
     </div>
   )
 }
@@ -77,13 +100,26 @@ export function TaskSlider({ direction, maxScore, month }) {
   const [idx, setIdx] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [score, setScore] = useState(maxScore)
+  const [score, setScore] = useState('')
   const [rejecting, setRejecting] = useState(false)
   const [rejectComment, setRejectComment] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState(null)
   const [counts, setCounts] = useState({ sariq: 0, yashil: 0, qizil: 0 })
-  const cardRef = useRef(null)
+  const [planScore, setPlanScore] = useState(null)
+
+  useEffect(() => {
+    if (!direction || !month) { setPlanScore(null); return }
+    api.getMonthPlan(direction, month)
+      .then(data => {
+        if (data.target_count && data.max_score) {
+          setPlanScore(Math.round((data.max_score / data.target_count) * 100) / 100)
+        } else {
+          setPlanScore(null)
+        }
+      })
+      .catch(() => setPlanScore(null))
+  }, [direction, month])
 
   const loadCounts = useCallback(async () => {
     try {
@@ -106,38 +142,30 @@ export function TaskSlider({ direction, maxScore, month }) {
       setRejecting(false)
       setRejectComment('')
       setActionError(null)
-      if (data.length > 0) setScore(maxScore)
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [direction, month, maxScore])
+  }, [direction, month])
 
-  useEffect(() => {
-    loadCounts()
-    loadTasks(taskStatus)
-  }, [direction, month]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadCounts(); loadTasks(taskStatus) }, [direction, month]) // eslint-disable-line
+  useEffect(() => { loadCounts(); loadTasks(taskStatus) }, [taskStatus]) // eslint-disable-line
 
+  // Reset score + UI when navigating tasks
   useEffect(() => {
-    loadCounts()
-    loadTasks(taskStatus)
-  }, [taskStatus]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (tasks[idx]) setScore(maxScore)
+    setScore(planScore !== null ? String(planScore) : String(maxScore))
     setRejecting(false)
     setRejectComment('')
     setActionError(null)
-    if (cardRef.current) cardRef.current.scrollTop = 0
-  }, [idx, maxScore]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [idx, maxScore, planScore])
 
   const handleApprove = async () => {
     const task = tasks[idx]
     setBusy(true)
     setActionError(null)
     try {
-      await api.reviewTask(task.id, 'tasdiqlash', Number(score))
+      await api.reviewTask(task.id, 'tasdiqlash', score !== '' ? Number(score) : null)
       await loadCounts()
       const updated = await api.getSliderTasks(direction, month, taskStatus)
       setTasks(updated)
@@ -170,37 +198,40 @@ export function TaskSlider({ direction, maxScore, month }) {
   }
 
   const task = tasks[idx]
+  const scoreMax = planScore !== null ? planScore : maxScore
 
   return (
     <div className="space-y-5">
       {/* Status tabs */}
-      <div className="flex gap-2 border-b border-slate-200 pb-4">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
         {STATUS_TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setTaskStatus(tab.key)}
+          <button key={tab.key} onClick={() => setTaskStatus(tab.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
               taskStatus === tab.key
                 ? `${tab.activeBg} text-white shadow-sm`
-                : `bg-slate-100 ${tab.inactiveText} hover:bg-slate-200`
-            }`}
-          >
+                : `bg-slate-100 dark:bg-slate-700 ${tab.inactiveText} hover:bg-slate-200 dark:hover:bg-slate-600`
+            }`}>
             {tab.label}
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-              taskStatus === tab.key ? 'bg-white/25 text-white' : 'bg-white text-slate-600'
-            }`}>
-              {counts[tab.key]}
-            </span>
+              taskStatus === tab.key ? 'bg-white/25 text-white' : 'bg-white dark:bg-slate-600 text-slate-600 dark:text-slate-300'
+            }`}>{counts[tab.key]}</span>
           </button>
         ))}
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-24">
-          <Loader2 className="w-7 h-7 animate-spin text-blue-500" />
+      {/* Plan hint */}
+      {planScore !== null && (
+        <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg px-4 py-2.5 text-blue-700 dark:text-blue-300">
+          <Target className="w-4 h-4 flex-shrink-0" />
+          Rejaga asosan har bir topshiriq uchun ball: <strong className="ml-1">{planScore}</strong>
+          <span className="text-blue-500 dark:text-blue-400 ml-1">(max {maxScore})</span>
         </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-24"><Loader2 className="w-7 h-7 animate-spin text-blue-500" /></div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-5 text-sm">{error}</div>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 rounded-xl p-5 text-sm">{error}</div>
       ) : tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-slate-400">
           <CheckCircle2 className="w-12 h-12 mb-3 opacity-25" />
@@ -212,63 +243,102 @@ export function TaskSlider({ direction, maxScore, month }) {
         </div>
       ) : (
         <div>
-          {/* Counter + dots */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-slate-500">
-              <span className="font-bold text-slate-800">{idx + 1}</span> / {tasks.length} ta topshiriq
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              <span className="font-bold text-slate-800 dark:text-slate-200">{idx + 1}</span> / {tasks.length} ta topshiriq
             </span>
             <div className="flex gap-1 flex-wrap justify-end max-w-xs">
               {tasks.slice(0, 30).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setIdx(i)}
-                  className={`h-2 rounded-full transition-all ${i === idx ? 'bg-blue-600 w-4' : 'bg-slate-300 hover:bg-slate-400 w-2'}`}
-                />
+                <button key={i} onClick={() => setIdx(i)}
+                  className={`h-2 rounded-full transition-all ${i === idx ? 'bg-blue-600 w-4' : 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 w-2'}`} />
               ))}
               {tasks.length > 30 && <span className="text-xs text-slate-400">+{tasks.length - 30}</span>}
             </div>
           </div>
 
-          {/* Slider row: arrow | card | arrow */}
           <div className="flex items-stretch gap-2">
-            <button
-              onClick={() => setIdx(i => Math.max(i - 1, 0))}
-              disabled={idx === 0}
-              className="flex-shrink-0 self-center p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-20 transition-all shadow-sm"
-            >
-              <ChevronLeft className="w-6 h-6 text-slate-600" />
+            <button onClick={() => setIdx(i => Math.max(i - 1, 0))} disabled={idx === 0}
+              className="flex-shrink-0 self-center p-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-20 transition-all shadow-sm">
+              <ChevronLeft className="w-6 h-6 text-slate-600 dark:text-slate-300" />
             </button>
 
-            {/* Card */}
-            <div
-              className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col"
-              style={{ maxHeight: '72vh' }}
-            >
+            <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: '75vh' }}>
               {/* Card header */}
-              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex-shrink-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900">{task.leader?.mahalla_name} MFY</h2>
-                    <p className="text-sm text-slate-500 mt-0.5">{task.leader?.district} · {task.created_at}</p>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{task.leader?.mahalla_name} MFY</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{task.leader?.district} · {task.created_at}</p>
                   </div>
                   <span className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${
-                    task.status === 'yashil' ? 'bg-emerald-100 text-emerald-700' :
-                    task.status === 'qizil'  ? 'bg-red-100 text-red-700' :
-                                               'bg-amber-100 text-amber-700'
+                    task.status === 'yashil' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' :
+                    task.status === 'qizil'  ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' :
+                                               'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400'
                   }`}>
                     {task.status === 'yashil' ? 'Tasdiqlangan' : task.status === 'qizil' ? 'Rad etilgan' : 'Kutilmoqda'}
                   </span>
                 </div>
               </div>
 
-              {/* Card body — scrollable */}
-              <div ref={cardRef} className="flex-1 overflow-y-auto p-5 space-y-4">
-                {/* Metadata */}
+              {/* ── Action bar at TOP (always visible, no scroll needed) ── */}
+              {taskStatus === 'sariq' && (
+                <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-3">
+                  {actionError && <p className="text-sm text-red-600 dark:text-red-400 mb-2">{actionError}</p>}
+                  {rejecting ? (
+                    <div className="space-y-2">
+                      <textarea value={rejectComment} onChange={e => setRejectComment(e.target.value)}
+                        placeholder="Rad etish sababini kiriting..." rows={2}
+                        className="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                      <div className="flex gap-2">
+                        <button onClick={handleReject} disabled={busy || !rejectComment.trim()}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
+                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                          Rad etishni tasdiqlash
+                        </button>
+                        <button onClick={() => { setRejecting(false); setRejectComment('') }}
+                          className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors">
+                          Bekor
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
+                        <input
+                          type="number" min={0} max={scoreMax} step={0.25} value={score}
+                          onChange={e => {
+                            const v = Number(e.target.value)
+                            setScore(v > scoreMax ? String(scoreMax) : e.target.value)
+                          }}
+                          className="w-20 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-slate-400 dark:text-slate-500">/ {scoreMax}</span>
+                        {planScore !== null && (
+                          <span className="text-xs text-slate-400 dark:text-slate-500">(max {maxScore})</span>
+                        )}
+                      </div>
+                      <button onClick={handleApprove} disabled={busy}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
+                        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        Tasdiqlash
+                      </button>
+                      <button onClick={() => setRejecting(true)} disabled={busy}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
+                        <XCircle className="w-4 h-4" /> Rad etish
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {(task.text_comment || task.event_name || task.youth_count || task.location ||
                   task.event_time || task.profilaktika_type_display || task.student_fio ||
                   task.startup_name || task.startup_owner_fio) && (
-                  <div className="bg-slate-50 rounded-xl p-4 space-y-2.5 border border-slate-100">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Ma'lumotlar</p>
+                  <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 space-y-2.5 border border-slate-100 dark:border-slate-700">
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Ma'lumotlar</p>
                     <InfoRow label="Izoh" value={task.text_comment} />
                     <InfoRow label="Tadbir nomi" value={task.event_name} />
                     <InfoRow label="Tadbir turi" value={task.event_type_display} />
@@ -282,111 +352,37 @@ export function TaskSlider({ direction, maxScore, month }) {
                   </div>
                 )}
 
-                {/* Files */}
                 {task.attachments?.length > 0 ? (
                   <div className="space-y-3">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                       Yuklangan fayllar ({task.attachments.length} ta)
                     </p>
-                    {task.attachments.map((att, i) => (
-                      <FilePreview key={i} file={att} />
-                    ))}
+                    {task.attachments.map((att, i) => <FilePreview key={i} file={att} />)}
                   </div>
                 ) : (
                   !task.text_comment && !task.event_name && !task.startup_name && !task.student_fio && (
-                    <p className="text-sm text-slate-400 italic text-center py-4">Fayl yoki ma'lumot yuklanmagan</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 italic text-center py-4">Fayl yoki ma'lumot yuklanmagan</p>
                   )
                 )}
 
                 {task.status === 'yashil' && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-emerald-700">Berilgan ball</span>
-                    <span className="text-2xl font-bold text-emerald-600">{task.score} / {maxScore}</span>
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl p-4 flex items-center justify-between">
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Berilgan ball</span>
+                    <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{task.score} / {maxScore}</span>
                   </div>
                 )}
                 {task.status === 'qizil' && task.admin_comment && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4">
                     <p className="text-xs font-semibold text-red-500 mb-1">Rad etish sababi</p>
-                    <p className="text-sm text-red-700">{task.admin_comment}</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{task.admin_comment}</p>
                   </div>
                 )}
               </div>
-
-              {/* Footer — only for pending */}
-              {taskStatus === 'sariq' && (
-                <div className="flex-shrink-0 border-t border-slate-200 bg-white px-5 py-4">
-                  {actionError && (
-                    <p className="text-sm text-red-600 mb-3">{actionError}</p>
-                  )}
-                  {rejecting ? (
-                    <div className="space-y-3">
-                      <textarea
-                        value={rejectComment}
-                        onChange={e => setRejectComment(e.target.value)}
-                        placeholder="Rad etish sababini kiriting..."
-                        rows={2}
-                        className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleReject}
-                          disabled={busy || !rejectComment.trim()}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
-                        >
-                          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                          Rad etishni tasdiqlash
-                        </button>
-                        <button
-                          onClick={() => { setRejecting(false); setRejectComment('') }}
-                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold text-slate-700 transition-colors"
-                        >
-                          Bekor
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <label className="text-sm font-medium text-slate-600">Ball:</label>
-                        <input
-                          type="number"
-                          min={0}
-                          max={maxScore}
-                          step={0.5}
-                          value={score}
-                          onChange={e => setScore(e.target.value)}
-                          className="w-20 text-center border border-slate-300 rounded-lg px-2 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-slate-400">/ {maxScore}</span>
-                      </div>
-                      <button
-                        onClick={handleApprove}
-                        disabled={busy}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
-                      >
-                        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                        Tasdiqlash
-                      </button>
-                      <button
-                        onClick={() => setRejecting(true)}
-                        disabled={busy}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Rad etish
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
-            <button
-              onClick={() => setIdx(i => Math.min(i + 1, tasks.length - 1))}
-              disabled={idx === tasks.length - 1}
-              className="flex-shrink-0 self-center p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-20 transition-all shadow-sm"
-            >
-              <ChevronRight className="w-6 h-6 text-slate-600" />
+            <button onClick={() => setIdx(i => Math.min(i + 1, tasks.length - 1))} disabled={idx === tasks.length - 1}
+              className="flex-shrink-0 self-center p-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-20 transition-all shadow-sm">
+              <ChevronRight className="w-6 h-6 text-slate-600 dark:text-slate-300" />
             </button>
           </div>
         </div>
