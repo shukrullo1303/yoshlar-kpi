@@ -117,9 +117,18 @@ def make_approve(score_val):
     def approve(modeladmin, request, queryset):
         updated = queryset.filter(status='sariq').update(status='yashil', score=score_val)
         modeladmin.message_user(request, f"{updated} ta topshiriq tasdiqlandi ({score_val} ball)")
-    approve.short_description = f"✅ Tanlanganni tasdiqlash ({score_val} ball)"
+    approve.short_description = f"✅ Tasdiqlash — {score_val} ball"
     approve.__name__ = f"approve_{score_val}"
     return approve
+
+
+def make_set_score(score_val):
+    def set_score(modeladmin, request, queryset):
+        updated = queryset.filter(status='yashil').update(score=score_val)
+        modeladmin.message_user(request, f"{updated} ta tasdiqlangan topshiriqning bali {score_val} ga o'zgartirildi")
+    set_score.short_description = f"✏️ Ball o'zgartirish → {score_val}"
+    set_score.__name__ = f"set_score_{score_val}"
+    return set_score
 
 
 def action_reject(modeladmin, request, queryset):
@@ -127,7 +136,19 @@ def action_reject(modeladmin, request, queryset):
         status='qizil', admin_comment='Admin tomonidan rad etildi'
     )
     modeladmin.message_user(request, f"{updated} ta topshiriq rad etildi")
-action_reject.short_description = "❌ Tanlanganni rad etish"
+action_reject.short_description = "❌ Rad etish"
+
+
+def action_reset_to_pending(modeladmin, request, queryset):
+    updated = queryset.update(status='sariq', score=None, admin_comment='')
+    modeladmin.message_user(request, f"{updated} ta topshiriq qayta ko'rib chiqishga yuborildi (ball o'chirildi)")
+action_reset_to_pending.short_description = "🔄 Ballarni o'chirib, qayta ko'rib chiqishga yuborish"
+
+
+def action_clear_score(modeladmin, request, queryset):
+    updated = queryset.filter(status='yashil').update(score=None)
+    modeladmin.message_user(request, f"{updated} ta topshiriqning bali o'chirildi")
+action_clear_score.short_description = "🗑️ Faqat balni o'chirish (status o'zgarmaydi)"
 
 
 @admin.register(KPITask)
@@ -142,14 +163,18 @@ class KPITaskAdmin(admin.ModelAdmin):
     ]
     list_display_links = ['get_mahalla']
     list_editable = ['score']
-    list_filter = ['direction', 'status', 'month', 'leader__district']
+    list_filter = ['status', 'direction', 'month', 'leader__district']
     search_fields = ['leader__mahalla_name', 'leader__user__username', 'event_name', 'startup_name']
     date_hierarchy = 'month'
     ordering = ['-created_at']
     actions = [
-        make_approve(1), make_approve(3), make_approve(5),
+        make_approve(1), make_approve(2), make_approve(3), make_approve(5),
         make_approve(10), make_approve(15), make_approve(20),
+        make_set_score(1), make_set_score(2), make_set_score(3), make_set_score(5),
+        make_set_score(10), make_set_score(15), make_set_score(20),
         action_reject,
+        action_reset_to_pending,
+        action_clear_score,
     ]
 
     fieldsets = (
