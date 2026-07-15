@@ -1,0 +1,262 @@
+[
+{
+  "model": "core.kpidirection",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.023Z",
+    "updated_at": "2026-07-14T08:59:29.023Z",
+    "key": "1_ijro",
+    "label": "Ijro intizomi",
+    "max_score": 20,
+    "order": 1,
+    "admin_scored": true,
+    "is_uploadable": false,
+    "info": "Har ish kunida admin tomonidan baholanadi. Ishga kelish tartib-intizomi.",
+    "how": "Yuklash shart emas — admin kunlik qayd qiladi.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.025Z",
+    "updated_at": "2026-07-14T08:59:29.025Z",
+    "key": "2_balans",
+    "label": "Yoshlar balansi",
+    "max_score": 5,
+    "order": 2,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Yoshlar balansi ro'yxati va yangilanishlarini tasdiqlang.",
+    "how": "Ro'yxat, raqam va hujjat fayllarini yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.025Z",
+    "updated_at": "2026-07-14T08:59:29.025Z",
+    "key": "3_bandlik",
+    "label": "Yoshlar bandligi",
+    "max_score": 15,
+    "order": 3,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Yoshlarni ishga joylashtirganligi haqida hisobot.",
+    "how": "Ish joyiga yo'llanma, buyruq yoki tasdiqlash xatini yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.026Z",
+    "updated_at": "2026-07-14T08:59:29.026Z",
+    "key": "4_bosh_vaqt",
+    "label": "Bo'sh vaqtni mazmunli tashkil etish",
+    "max_score": 15,
+    "order": 4,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Sport, madaniy, ijodiy tadbirlar tashkillashtirish.",
+    "how": "Tadbir surat va videosi, ishtirokchilar ro'yxatini yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.026Z",
+    "updated_at": "2026-07-14T08:59:29.026Z",
+    "key": "5_profilaktika",
+    "label": "Ijtimoiy profilaktika",
+    "max_score": 10,
+    "order": 5,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Ijtimoiy xavfli holatlar oldini olish bo'yicha tadbirlar.",
+    "how": "Profilaktik suhbat bayonnomasini yoki PQ-1 hujjatini yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.026Z",
+    "updated_at": "2026-07-14T08:59:29.026Z",
+    "key": "6_murojaat",
+    "label": "Murojaatlar bilan ishlash",
+    "max_score": 5,
+    "order": 6,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Fuqarolar murojaatlariga o'z vaqtida javob berish.",
+    "how": "Murojaat va javob hujjatini yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.027Z",
+    "updated_at": "2026-07-14T08:59:29.027Z",
+    "key": "7_brend",
+    "label": "Brend loyihalar va shaxsiy rivojlanish",
+    "max_score": 10,
+    "order": 7,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Brend loyihalar va shaxsiy rivojlanish tadbirlari.",
+    "how": "Loyiha tavsifi, surat va natijalarni yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.027Z",
+    "updated_at": "2026-07-14T08:59:29.027Z",
+    "key": "8_talim",
+    "label": "Ta'lim muassasalaridagi yoshlar bilan ishlash",
+    "max_score": 5,
+    "order": 8,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Ta'lim muassasalaridagi yoshlar bilan ishlash natijalari.",
+    "how": "O'quvchi ma'lumotlari va tasdiqlash hujjatini yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.028Z",
+    "updated_at": "2026-07-14T08:59:29.028Z",
+    "key": "9_startap",
+    "label": "Zamonaviy kasblar va startap loyihalar",
+    "max_score": 5,
+    "order": 9,
+    "admin_scored": false,
+    "is_uploadable": true,
+    "info": "Zamonaviy kasblar va startap loyihalarni qo'llab-quvvatlash.",
+    "how": "Startap nomi, egasi va tasdiqlovchi hujjatni yuklang.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpidirection",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-07-14T08:59:29.028Z",
+    "updated_at": "2026-07-14T08:59:29.028Z",
+    "key": "10_nomenklatura",
+    "label": "Nomenklatura hujjatlar",
+    "max_score": 10,
+    "order": 10,
+    "admin_scored": true,
+    "is_uploadable": false,
+    "info": "Nomenklatura hujjatlar to'g'ri yuritilishi oylik tekshiriladi.",
+    "how": "Hujjatlar admin tomonidan reja asosida tekshiriladi.",
+    "is_active": true
+  }
+},
+{
+  "model": "core.kpimonthplan",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-07-14T10:41:27.427Z",
+    "updated_at": "2026-07-14T11:10:43.408Z",
+    "direction_key": "4_bosh_vaqt",
+    "month": "2026-07-01",
+    "target_count": 4,
+    "plan_dates": []
+  }
+},
+{
+  "model": "core.kpimonthplan",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-07-14T10:51:05.996Z",
+    "updated_at": "2026-07-14T10:51:09.457Z",
+    "direction_key": "6_murojaat",
+    "month": "2026-08-01",
+    "target_count": 2,
+    "plan_dates": []
+  }
+},
+{
+  "model": "core.kpimonthplan",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-07-15T04:30:06.710Z",
+    "updated_at": "2026-07-15T06:00:05.582Z",
+    "direction_key": "8_talim",
+    "month": "2026-07-01",
+    "target_count": 5,
+    "plan_dates": [
+      {
+        "date": "2026-07-01",
+        "count": 2
+      },
+      {
+        "date": "2026-07-06",
+        "count": 2
+      },
+      {
+        "date": "2026-07-13",
+        "count": 2
+      },
+      {
+        "date": "2026-07-20",
+        "count": 2
+      },
+      {
+        "date": "2026-07-27",
+        "count": 2
+      }
+    ]
+  }
+},
+{
+  "model": "core.kpimonthplan",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-07-15T05:59:43.794Z",
+    "updated_at": "2026-07-15T05:59:43.794Z",
+    "direction_key": "3_bandlik",
+    "month": "2026-07-01",
+    "target_count": 5,
+    "plan_dates": [
+      {
+        "date": "2026-07-01",
+        "count": 2
+      },
+      {
+        "date": "2026-07-06",
+        "count": 2
+      },
+      {
+        "date": "2026-07-13",
+        "count": 2
+      },
+      {
+        "date": "2026-07-20",
+        "count": 2
+      },
+      {
+        "date": "2026-07-27",
+        "count": 2
+      }
+    ]
+  }
+}
+]

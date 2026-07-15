@@ -1,5 +1,56 @@
-from config.settings.local import *
+import os
+from pathlib import Path
+from config.settings.base import *
 
+# BASE_DIR fix: base.py sets it to backend/config/, we need backend/
+BASE_DIR = BASE_DIR.parent
+
+# ── Security ──────────────────────────────────────────────────────────────────
+SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = False
-ALLOWED_HOSTS = ['your-production-domain.com']
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
 
+# ── Frontend dist ─────────────────────────────────────────────────────────────
+FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [FRONTEND_DIST],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    }
+]
+
+# ── Database ──────────────────────────────────────────────────────────────────
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# ── Media & Static ────────────────────────────────────────────────────────────
+MEDIA_URL  = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+STATIC_URL  = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# ── CORS / CSRF ───────────────────────────────────────────────────────────────
+_origins = [o.strip() for o in os.environ.get('ALLOWED_ORIGINS', '').split(',') if o.strip()]
+CORS_ALLOWED_ORIGINS  = _origins
+CSRF_TRUSTED_ORIGINS  = _origins
+CORS_ALLOW_CREDENTIALS = True
+
+# ── Security headers ──────────────────────────────────────────────────────────
+X_FRAME_OPTIONS            = 'SAMEORIGIN'  # PDF iframe uchun kerak
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SESSION_COOKIE_SECURE      = True
+CSRF_COOKIE_SECURE         = True
