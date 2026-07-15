@@ -49,7 +49,10 @@ class UserDashboardView(APIView):
             sariq_qs = _month_qs(base_qs.filter(status='sariq'), d.key, month)
             qizil_qs = _month_qs(base_qs.filter(status='qizil'), d.key, month)
 
-            approved_score = yashil_qs.aggregate(Sum('score'))['score__sum'] or 0.0
+            approved_score = min(
+                yashil_qs.aggregate(Sum('score'))['score__sum'] or 0.0,
+                d.max_score,
+            )
             total_score += approved_score
 
             # Plan info
@@ -82,7 +85,7 @@ class UserDashboardView(APIView):
                     KPITask.objects.filter(leader=p, direction=d.key, status='yashil'),
                     d.key, month
                 )
-                s += qs.aggregate(Sum('score'))['score__sum'] or 0.0
+                s += min(qs.aggregate(Sum('score'))['score__sum'] or 0.0, d.max_score)
             all_scores.append({'id': p.id, 'total': s})
 
         all_scores.sort(key=lambda x: x['total'], reverse=True)

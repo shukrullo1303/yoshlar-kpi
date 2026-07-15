@@ -57,7 +57,7 @@ class AdminDistrictsRankingView(BaseAdminAPIView):
             for d in directions:
                 qs = KPITask.objects.filter(leader=profile, direction=d.key, status='yashil')
                 qs = _apply_month_filter(qs, d.key, month_from, month_to)
-                total = qs.aggregate(Sum('score'))['score__sum'] or 0
+                total = min(qs.aggregate(Sum('score'))['score__sum'] or 0, d.max_score)
                 scores.append(round(float(total), 2))
 
             result.append({
