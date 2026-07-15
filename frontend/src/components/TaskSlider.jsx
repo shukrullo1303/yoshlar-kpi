@@ -45,14 +45,12 @@ function FilePreview({ file }) {
   if (isPdf(url)) {
     return (
       <div className="rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden">
-        <object
-          data={url}
-          type="application/pdf"
-          className="w-full bg-slate-100 dark:bg-slate-900"
-          style={{ height: '500px' }}
-        >
-          <embed src={url} type="application/pdf" style={{ width: '100%', height: '500px' }} />
-        </object>
+        <iframe
+          src={url}
+          className="w-full bg-slate-100 dark:bg-slate-900 border-0"
+          style={{ height: '600px' }}
+          title={name}
+        />
         <div className="px-3 py-2 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{name}</span>
           <a href={url} target="_blank" rel="noopener noreferrer"

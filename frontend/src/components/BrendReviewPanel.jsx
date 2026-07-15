@@ -20,12 +20,7 @@ function ThumbPreview({ file }) {
   if (isPdf(url)) {
     return (
       <div className="w-full h-28 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden bg-slate-50 dark:bg-slate-900">
-        <object data={url} type="application/pdf" className="w-full h-full pointer-events-none">
-          <div className="flex flex-col items-center justify-center h-full text-slate-400">
-            <FileText className="w-8 h-8 mb-1" />
-            <span className="text-xs">PDF</span>
-          </div>
-        </object>
+        <iframe src={url} className="w-full h-full border-0 pointer-events-none" title="pdf" />
       </div>
     )
   }
@@ -56,9 +51,7 @@ function FullPreview({ file }) {
   if (isPdf(url)) {
     return (
       <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600">
-        <object data={url} type="application/pdf" className="w-full bg-slate-100 dark:bg-slate-900" style={{ height: 420 }}>
-          <embed src={url} type="application/pdf" style={{ width: '100%', height: 420 }} />
-        </object>
+        <iframe src={url} className="w-full border-0 bg-slate-100 dark:bg-slate-900" style={{ height: 420 }} title={name} />
         <div className="px-3 py-1.5 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{name}</span>
           <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 ml-2 flex items-center gap-1 flex-shrink-0">
