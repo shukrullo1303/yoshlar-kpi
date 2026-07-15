@@ -122,8 +122,10 @@ export function TaskSlider({ direction, maxScore, month }) {
     setPlanLoading(true)
     api.getMonthPlan(direction, month)
       .then(data => {
-        if (data.target_count && data.max_score) {
-          setPlanScore(Math.round((data.max_score / data.target_count) * 100) / 100)
+        // Use saved target_count, fall back to direction's default_target
+        const tc = data.target_count ?? (data.default_target > 0 ? data.default_target : null)
+        if (tc && data.max_score) {
+          setPlanScore(Math.round((data.max_score / tc) * 100) / 100)
         } else {
           setPlanScore(null)
         }

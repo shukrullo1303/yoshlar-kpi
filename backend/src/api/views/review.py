@@ -6,8 +6,8 @@ from .base import BaseAdminAPIView
 
 def _auto_score(task, given_score, max_score):
     """
-    Reja mavjud bo'lsa: har bir topshiriq uchun max = max_score / target_count.
-    Reja yo'q bo'lsa: given_score ni to'g'ridan to'g'ri qabul qiladi (max_score gacha).
+    Reja mavjud → max_per_task = max_score / target_count
+    Reja yo'q   → direction.default_target fallback
     Returns (final_score, error_message).
     """
     plan = KPIMonthPlan.objects.filter(
@@ -17,14 +17,21 @@ def _auto_score(task, given_score, max_score):
 
     if plan and plan.target_count > 0:
         max_per_task = round(float(max_score) / plan.target_count, 2)
-        if given_score is not None:
-            return min(float(given_score), max_per_task), None
-        return max_per_task, None
     else:
-        # No plan — require explicit score from admin
+        # Fall back to direction's default_target
+        try:
+            dt = KPIDirection.objects.get(key=task.direction).default_target
+            max_per_task = round(float(max_score) / dt, 2) if dt > 0 else None
+        except KPIDirection.DoesNotExist:
+            max_per_task = None
+
+    if max_per_task is None:
         if given_score is not None:
             return min(float(given_score), float(max_score)), None
-        return None, "Bu yo'nalish uchun reja qo'yilmagan. Avval reja qo'ying yoki ballni qo'lda kiriting."
+        return None, "Bu yo'nalish uchun reja yoki default qo'yilmagan. Ballni qo'lda kiriting."
+
+    final = min(float(given_score), max_per_task) if given_score is not None else max_per_task
+    return final, None
 
 
 class AdminReviewTaskView(BaseAdminAPIView):
