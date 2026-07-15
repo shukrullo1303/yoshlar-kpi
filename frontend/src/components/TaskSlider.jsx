@@ -182,8 +182,10 @@ export function TaskSlider({ direction, maxScore, month }) {
     const task = tasks[idx]
     setBusy(true)
     setActionError(null)
+    // Use typed score, fall back to planScore, then null (backend auto-scores from plan)
+    const finalScore = score !== '' ? Number(score) : (planScore !== null ? planScore : null)
     try {
-      await api.reviewTask(task.id, 'tasdiqlash', score !== '' ? Number(score) : null)
+      await api.reviewTask(task.id, 'tasdiqlash', finalScore)
       await loadCounts()
       const updated = await api.getSliderTasks(direction, month, taskStatus)
       setTasks(updated)
@@ -237,18 +239,6 @@ export function TaskSlider({ direction, maxScore, month }) {
         ))}
       </div>
 
-      {/* Plan badge */}
-      <div className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 border
-        bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300">
-        <Target className="w-4 h-4 flex-shrink-0" />
-        <span>1 topshiriq uchun max ball:</span>
-        {planLoading
-          ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" />
-          : planScore !== null
-            ? <strong className="ml-1 text-emerald-600 dark:text-emerald-400 text-base">{planScore}</strong>
-            : <span className="ml-1 text-amber-600 dark:text-amber-400 font-semibold">Reja qo'yilmagan</span>
-        }
-      </div>
 
       {loading ? (
         <div className="flex justify-center py-24"><Loader2 className="w-7 h-7 animate-spin text-blue-500" /></div>
@@ -350,7 +340,7 @@ export function TaskSlider({ direction, maxScore, month }) {
                       {!planLoading && score === '' && planScore === null && (
                         <span className="text-xs text-amber-600 dark:text-amber-400">Avval reja qo'ying</span>
                       )}
-                      <button onClick={handleApprove} disabled={busy || score === '' || planLoading}
+                      <button onClick={handleApprove} disabled={busy || planLoading || (score === '' && planScore === null)}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
                         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         Tasdiqlash

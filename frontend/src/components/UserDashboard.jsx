@@ -288,7 +288,7 @@ function DirectionCard({ dir, index, onUpload }) {
           <p className="text-xs text-slate-400 mt-1">
             Max: {dir.max_score} ball
             {dir.plan_max_per_item && (
-              <span className="ml-1.5 text-blue-500 dark:text-blue-400">· Reja: {dir.plan_max_per_item} ball/ta</span>
+              <span className="ml-1.5 text-blue-500 dark:text-blue-400">· {dir.plan_max_per_item} ball/ta</span>
             )}
           </p>
         </div>
@@ -296,8 +296,12 @@ function DirectionCard({ dir, index, onUpload }) {
           <div className="text-right">
             <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{dir.score}</div>
             {dir.plan_target ? (
-              <div className="text-xs text-blue-500 dark:text-blue-400 font-medium">
-                {dir.approved_count}/{dir.plan_target} reja
+              <div className={`text-xs font-semibold ${
+                dir.approved_count >= dir.plan_target
+                  ? 'text-emerald-500 dark:text-emerald-400'
+                  : 'text-blue-500 dark:text-blue-400'
+              }`}>
+                {dir.approved_count}/{dir.plan_target} topshiriq
               </div>
             ) : (
               <div className="text-xs text-slate-400">ball</div>

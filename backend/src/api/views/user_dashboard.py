@@ -55,8 +55,8 @@ class UserDashboardView(APIView):
             )
             total_score += approved_score
 
-            # Plan info
-            target = plan_map.get(d.key)
+            # Plan info — saved plan takes priority, then direction default
+            target = plan_map.get(d.key) or (d.default_target if d.default_target > 0 else None)
             max_per_item = round(d.max_score / target, 2) if target and target > 0 else None
 
             directions_data.append({
