@@ -62,31 +62,31 @@ class UserSubmitTaskView(APIView):
             v = request.data.get(field, '').strip()
             return v or None
 
-        task = KPITask(
-            leader=profile,
-            direction=direction,
-            month=month_str,
-            status='sariq',
-            score=0.0,
-            text_comment=get('text_comment'),
-            event_name=get('event_name'),
-            event_type=get('event_type') or None,
-            location=get('location'),
-            profilaktika_type=get('profilaktika_type') or None,
-            student_fio=get('student_fio'),
-            startup_name=get('startup_name'),
-            startup_owner_fio=get('startup_owner_fio'),
-        )
-
         yc = request.data.get('youth_count')
-        task.youth_count = int(yc) if yc and str(yc).isdigit() else None
-
         et = get('event_time')
-        task.event_time = et if et else None
 
-        task.save()
+        def _make_task():
+            t = KPITask(
+                leader=profile,
+                direction=direction,
+                month=month_str,
+                status='sariq',
+                score=0.0,
+                text_comment=get('text_comment'),
+                event_name=get('event_name'),
+                event_type=get('event_type') or None,
+                location=get('location'),
+                profilaktika_type=get('profilaktika_type') or None,
+                student_fio=get('student_fio'),
+                startup_name=get('startup_name'),
+                startup_owner_fio=get('startup_owner_fio'),
+            )
+            t.youth_count = int(yc) if yc and str(yc).isdigit() else None
+            t.event_time = et if et else None
+            t.save()
+            return t
 
-        for f in files:
+        def _attach(task, f):
             ext = '.' + f.name.rsplit('.', 1)[-1].lower() if '.' in f.name else ''
             is_img = ext in IMAGE_EXTS
             photo_taken_at = _read_exif_date(f) if is_img else None
@@ -97,5 +97,20 @@ class UserSubmitTaskView(APIView):
                 is_image=is_img,
                 photo_taken_at=photo_taken_at,
             )
+
+        if direction == '7_brend':
+            created_ids = []
+            for f in files:
+                task = _make_task()
+                _attach(task, f)
+                created_ids.append(task.id)
+            return Response(
+                {'message': f'{len(created_ids)} ta topshiriq yuborildi', 'task_ids': created_ids},
+                status=status.HTTP_201_CREATED,
+            )
+
+        task = _make_task()
+        for f in files:
+            _attach(task, f)
 
         return Response({'message': 'Topshiriq yuborildi', 'task_id': task.id}, status=status.HTTP_201_CREATED)
