@@ -10,8 +10,17 @@ function isPdf(url) {
   return /\.pdf(\?|$)/i.test(url)
 }
 
+function toRelative(url) {
+  if (!url) return url
+  try {
+    const u = new URL(url)
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return u.pathname + u.search
+  } catch (_) {}
+  return url
+}
+
 function ThumbPreview({ file }) {
-  const url = file.file
+  const url = toRelative(file.file)
   if (isImage(url)) {
     return (
       <img src={url} alt="" className="w-full h-28 object-cover rounded-lg bg-slate-100 dark:bg-slate-900" />
@@ -33,7 +42,7 @@ function ThumbPreview({ file }) {
 }
 
 function FullPreview({ file }) {
-  const url = file.file
+  const url = toRelative(file.file)
   const name = decodeURIComponent(url.split('/').pop())
   if (isImage(url)) {
     return (

@@ -10,8 +10,18 @@ function isPdf(url) {
   return /\.pdf(\?|$)/i.test(url)
 }
 
+// Convert absolute localhost URL to relative so Vite proxy handles it (fixes SAMEORIGIN iframe block)
+function toRelative(url) {
+  if (!url) return url
+  try {
+    const u = new URL(url)
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return u.pathname + u.search
+  } catch (_) {}
+  return url
+}
+
 function FilePreview({ file }) {
-  const url = file.file
+  const url = toRelative(file.file)
   const name = decodeURIComponent(url.split('/').pop())
 
   if (isImage(url)) {
@@ -105,9 +115,11 @@ export function TaskSlider({ direction, maxScore, month }) {
   const [actionError, setActionError] = useState(null)
   const [counts, setCounts] = useState({ sariq: 0, yashil: 0, qizil: 0 })
   const [planScore, setPlanScore] = useState(null)
+  const [planLoading, setPlanLoading] = useState(true)
 
   useEffect(() => {
-    if (!direction || !month) { setPlanScore(null); return }
+    if (!direction || !month) { setPlanScore(null); setPlanLoading(false); return }
+    setPlanLoading(true)
     api.getMonthPlan(direction, month)
       .then(data => {
         if (data.target_count && data.max_score) {
@@ -117,6 +129,7 @@ export function TaskSlider({ direction, maxScore, month }) {
         }
       })
       .catch(() => setPlanScore(null))
+      .finally(() => setPlanLoading(false))
   }, [direction, month])
 
   const loadCounts = useCallback(async () => {
@@ -217,14 +230,18 @@ export function TaskSlider({ direction, maxScore, month }) {
         ))}
       </div>
 
-      {/* Plan hint */}
-      {planScore !== null && (
-        <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg px-4 py-2.5 text-blue-700 dark:text-blue-300">
-          <Target className="w-4 h-4 flex-shrink-0" />
-          Rejaga asosan har bir topshiriq uchun ball: <strong className="ml-1">{planScore}</strong>
-          <span className="text-blue-500 dark:text-blue-400 ml-1">(max {maxScore})</span>
-        </div>
-      )}
+      {/* Plan badge */}
+      <div className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 border
+        bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300">
+        <Target className="w-4 h-4 flex-shrink-0" />
+        <span>1 topshiriq uchun max ball:</span>
+        {planLoading
+          ? <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" />
+          : planScore !== null
+            ? <strong className="ml-1 text-emerald-600 dark:text-emerald-400 text-base">{planScore}</strong>
+            : <span className="ml-1 text-amber-600 dark:text-amber-400 font-semibold">Reja qo'yilmagan</span>
+        }
+      </div>
 
       {loading ? (
         <div className="flex justify-center py-24"><Loader2 className="w-7 h-7 animate-spin text-blue-500" /></div>
@@ -300,27 +317,34 @@ export function TaskSlider({ direction, maxScore, month }) {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
-                        <input
-                          type="number" min={0} max={scoreMax || maxScore} step={0.01} value={score}
-                          onChange={e => {
-                            const cap = scoreMax || maxScore
-                            const v = Number(e.target.value)
-                            setScore(v > cap ? String(cap) : e.target.value)
-                          }}
-                          placeholder="0.0"
-                          className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-slate-400 dark:text-slate-500">
-                          / {planScore !== null ? planScore : maxScore}
-                        </span>
-                      </div>
-                      {score === '' && planScore === null && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {planLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Reja yuklanmoqda...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
+                          <input
+                            type="number" min={0} max={scoreMax || maxScore} step={0.01} value={score}
+                            onChange={e => {
+                              const cap = scoreMax || maxScore
+                              const v = Number(e.target.value)
+                              setScore(v > cap ? String(cap) : e.target.value)
+                            }}
+                            placeholder={planScore !== null ? String(planScore) : '0.0'}
+                            className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-slate-400 dark:text-slate-500">
+                            / {planScore ?? maxScore} ball (max)
+                          </span>
+                        </div>
+                      )}
+                      {!planLoading && score === '' && planScore === null && (
                         <span className="text-xs text-amber-600 dark:text-amber-400">Avval reja qo'ying</span>
                       )}
-                      <button onClick={handleApprove} disabled={busy || score === ''}
+                      <button onClick={handleApprove} disabled={busy || score === '' || planLoading}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
                         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         Tasdiqlash
