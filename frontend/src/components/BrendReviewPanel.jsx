@@ -240,14 +240,18 @@ export function BrendReviewPanel({ direction, maxScore, month }) {
               <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
               <input type="number" min={0} max={planScore !== null ? planScore : maxScore} step={0.25} value={score}
                 onChange={e => {
-                  const v = Number(e.target.value)
                   const cap = planScore !== null ? planScore : maxScore
+                  const v = Number(e.target.value)
                   setScore(v > cap ? String(cap) : e.target.value)
                 }}
+                placeholder="0.0"
                 className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               <span className="text-sm text-slate-400">/ {planScore !== null ? planScore : maxScore}</span>
+              {score === '' && planScore === null && (
+                <span className="text-xs text-amber-600 dark:text-amber-400">Avval reja qo'ying</span>
+              )}
               {actionError && <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>}
-              <button onClick={handleBulkAction} disabled={busy}
+              <button onClick={handleBulkAction} disabled={busy || score === ''}
                 className="ml-auto flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 {selected.size} tasini tasdiqlash

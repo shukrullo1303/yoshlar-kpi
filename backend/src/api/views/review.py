@@ -6,24 +6,25 @@ from .base import BaseAdminAPIView
 
 def _auto_score(task, given_score, max_score):
     """
-    Reja mavjud bo'lsa, har bir topshiriq uchun max ball = max_score / target_count.
-    Admin shu miqdordan ko'p ball bera olmaydi.
+    Reja mavjud bo'lsa: har bir topshiriq uchun max = max_score / target_count.
+    Reja yo'q bo'lsa: given_score ni to'g'ridan to'g'ri qabul qiladi (max_score gacha).
+    Returns (final_score, error_message).
     """
     plan = KPIMonthPlan.objects.filter(
         direction_key=task.direction,
         month=task.month,
     ).first()
 
-    max_per_task = (
-        round(float(max_score) / plan.target_count, 2)
-        if plan and plan.target_count > 0
-        else float(max_score)
-    )
-
-    if given_score is not None and given_score > 0:
-        return min(float(given_score), max_per_task)
-
-    return max_per_task if (plan and plan.target_count > 0) else 0.0
+    if plan and plan.target_count > 0:
+        max_per_task = round(float(max_score) / plan.target_count, 2)
+        if given_score is not None:
+            return min(float(given_score), max_per_task), None
+        return max_per_task, None
+    else:
+        # No plan — require explicit score from admin
+        if given_score is not None:
+            return min(float(given_score), float(max_score)), None
+        return None, "Bu yo'nalish uchun reja qo'yilmagan. Avval reja qo'ying yoki ballni qo'lda kiriting."
 
 
 class AdminReviewTaskView(BaseAdminAPIView):
@@ -56,7 +57,9 @@ class AdminReviewTaskView(BaseAdminAPIView):
             except KPIDirection.DoesNotExist:
                 max_score = 10
 
-            final_score = _auto_score(task, given_score, max_score)
+            final_score, score_err = _auto_score(task, given_score, max_score)
+            if score_err:
+                return Response({"error": score_err}, status=status.HTTP_400_BAD_REQUEST)
 
             if final_score < 0 or final_score > max_score + 0.01:
                 return Response(
@@ -129,7 +132,10 @@ class AdminBulkReviewView(BaseAdminAPIView):
                 except KPIDirection.DoesNotExist:
                     max_score = 10
 
-                final_score = _auto_score(task, given_score, max_score)
+                final_score, score_err = _auto_score(task, given_score, max_score)
+                if score_err:
+                    return Response({"error": score_err}, status=status.HTTP_400_BAD_REQUEST)
+
                 task.status = 'yashil'
                 task.score = final_score
                 task.admin_comment = None

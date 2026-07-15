@@ -152,7 +152,7 @@ export function TaskSlider({ direction, maxScore, month }) {
 
   // Reset score + UI when navigating tasks
   useEffect(() => {
-    setScore(planScore !== null ? String(planScore) : String(maxScore))
+    setScore(planScore !== null ? String(planScore) : '')
     setRejecting(false)
     setRejectComment('')
     setActionError(null)
@@ -304,19 +304,24 @@ export function TaskSlider({ direction, maxScore, month }) {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
                         <input
-                          type="number" min={0} max={scoreMax} step={0.25} value={score}
+                          type="number" min={0} max={scoreMax || maxScore} step={0.25} value={score}
                           onChange={e => {
+                            const cap = scoreMax || maxScore
                             const v = Number(e.target.value)
-                            setScore(v > scoreMax ? String(scoreMax) : e.target.value)
+                            setScore(v > cap ? String(cap) : e.target.value)
                           }}
+                          placeholder={planScore === null ? "0.0" : undefined}
                           className="w-20 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-slate-400 dark:text-slate-500">/ {scoreMax}</span>
+                        <span className="text-sm text-slate-400 dark:text-slate-500">/ {scoreMax || maxScore}</span>
                         {planScore !== null && (
                           <span className="text-xs text-slate-400 dark:text-slate-500">(max {maxScore})</span>
                         )}
                       </div>
-                      <button onClick={handleApprove} disabled={busy}
+                      {score === '' && planScore === null && (
+                        <span className="text-xs text-amber-600 dark:text-amber-400">Avval reja qo'ying</span>
+                      )}
+                      <button onClick={handleApprove} disabled={busy || score === ''}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors">
                         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         Tasdiqlash
