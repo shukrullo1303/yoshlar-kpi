@@ -5,7 +5,6 @@ import { DistrictsRanking } from './DistrictsRanking'
 import { DailyScoreTable } from './DailyScoreTable'
 import { TaskSlider } from './TaskSlider'
 import { MonthPlanBar } from './MonthPlanBar'
-import { BrendReviewPanel } from './BrendReviewPanel'
 import { MFYStatusPanel } from './MFYStatusPanel'
 
 const NAV_UMUMIY   = '__umumiy__'
@@ -197,21 +196,12 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
         {subView === 'tasks' && (
           <>
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-              {nav === '7_brend' ? (
-                <BrendReviewPanel
-                  key={nav}
-                  direction={nav}
-                  maxScore={activeDirection?.maxScore ?? 0}
-                  month={activeMonth}
-                />
-              ) : (
-                <TaskSlider
-                  key={nav}
-                  direction={nav}
-                  maxScore={activeDirection?.maxScore ?? 0}
-                  month={activeMonth}
-                />
-              )}
+              <TaskSlider
+                key={nav}
+                direction={nav}
+                maxScore={activeDirection?.maxScore ?? 0}
+                month={activeMonth}
+              />
             </div>
           </>
         )}
