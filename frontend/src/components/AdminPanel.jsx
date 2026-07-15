@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays } from 'lucide-react'
+import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Lock } from 'lucide-react'
 import { api } from '../services/api'
 import { DistrictsRanking } from './DistrictsRanking'
 import { DailyScoreTable } from './DailyScoreTable'
@@ -10,6 +10,7 @@ import { MFYStatusPanel } from './MFYStatusPanel'
 
 const NAV_UMUMIY   = '__umumiy__'
 const NAV_YONALISH = '__yonalish__'
+const NAV_REJA     = '__reja__'
 
 function toMonthParam(val) {
   return val ? `${val}-01` : null
@@ -22,6 +23,7 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
   const [nav, setNav]                             = useState('')
   const [subView, setSubView]                     = useState('tasks') // 'tasks' | 'plan' | 'mfy'
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [rejaDirection, setRejaDirection]         = useState('')
 
   const activeMonthFrom = toMonthParam(monthFrom)
   const activeMonthTo   = toMonthParam(monthTo)
@@ -70,7 +72,6 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
         ]
       : [
           { key: 'tasks', label: 'Topshiriqlar' },
-          { key: 'plan',  label: "Reja qo'yish", icon: <CalendarDays className="w-3.5 h-3.5" /> },
           { key: 'mfy',   label: "MFYlar kesimida", icon: <LayoutGrid className="w-3.5 h-3.5" /> },
         ]
     return (
@@ -104,6 +105,42 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
       )
     }
 
+    // Dedicated Reja page
+    if (nav === NAV_REJA) {
+      const rejaDirections = directions.filter(d => !d.adminScored)
+      const activeKey      = rejaDirection || rejaDirections[0]?.key || ''
+      const activeRejaDir  = rejaDirections.find(d => d.key === activeKey)
+      return (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Oylik Reja</h2>
+            <p className="text-slate-400 text-sm mt-1">Yo'nalishni tanlang va haftalar bo'yicha reja kiriting</p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {rejaDirections.map(d => (
+              <button key={d.key} onClick={() => setRejaDirection(d.key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                  activeKey === d.key
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}>
+                {d.label}
+              </button>
+            ))}
+          </div>
+          {activeRejaDir && (
+            <MonthPlanBar
+              key={activeKey}
+              direction={activeKey}
+              month={activeMonth}
+              maxScore={activeRejaDir.maxScore}
+              defaultOpen
+            />
+          )}
+        </div>
+      )
+    }
+
     // Admin-scored directions (e.g. 1_ijro)
     if (activeDirection?.adminScored) {
       return (
@@ -122,15 +159,40 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               monthFrom={activeMonthFrom}
               monthTo={activeMonthTo || activeMonthFrom}
             />
-          ) : (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
-              <DailyScoreTable
-                direction={nav}
-                maxScore={activeDirection?.maxScore}
-                month={activeMonth}
-              />
-            </div>
-          )}
+          ) : (() => {
+            // 10_nomenklatura locks until 25th of the selected month
+            if (nav === '10_nomenklatura') {
+              const today = new Date()
+              const refMonth = activeMonth || `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`
+              const [y, m] = refMonth.split('-').map(Number)
+              const unlockDate = new Date(y, m - 1, 25)
+              if (today < unlockDate) {
+                const UZ_MONTHS_SHORT = ['Yan','Fev','Mar','Apr','May','Iyu','Iyu','Avg','Sen','Okt','Noy','Dek']
+                return (
+                  <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                      <Lock className="w-8 h-8 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-slate-200">Baholash hali ochilmagan</p>
+                      <p className="text-sm text-slate-400 mt-1">
+                        10-yo'nalish baholash <span className="text-amber-400 font-semibold">25-{UZ_MONTHS_SHORT[m-1]}</span>dan keyin ochiladi
+                      </p>
+                    </div>
+                  </div>
+                )
+              }
+            }
+            return (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
+                <DailyScoreTable
+                  direction={nav}
+                  maxScore={activeDirection?.maxScore}
+                  month={activeMonth}
+                />
+              </div>
+            )
+          })()}
         </div>
       )
     }
@@ -143,20 +205,11 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
             <h2 className="text-lg sm:text-xl font-bold text-white">{activeDirection?.label}</h2>
             <p className="text-slate-400 text-sm mt-1">
               {subView === 'tasks' && `Materiallarni tekshirish — max ${activeDirection?.maxScore} ball`}
-              {subView === 'plan'  && 'Oylik reja va baholash sanalarini belgilash'}
               {subView === 'mfy'   && 'MFYlar kesimida topshiriq holati'}
             </p>
           </div>
           <SubTabs />
         </div>
-
-        {subView === 'plan' && (
-          <MonthPlanBar
-            direction={nav}
-            month={activeMonth}
-            maxScore={activeDirection?.maxScore ?? 0}
-          />
-        )}
 
         {subView === 'mfy' && (
           <MFYStatusPanel
@@ -214,6 +267,15 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
       </div>
 
       <div className="pt-4 border-t border-slate-800">
+        <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2 px-2">Reja</p>
+        <nav className="space-y-0.5 mb-4">
+          <button onClick={() => handleNav(NAV_REJA)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              nav === NAV_REJA ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+            }`}>
+            <CalendarDays className="w-4 h-4 flex-shrink-0" /> Oylik Reja
+          </button>
+        </nav>
         <p className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-2 px-2">Reytinglar</p>
         <nav className="space-y-0.5">
           <button onClick={() => handleNav(NAV_UMUMIY)}
