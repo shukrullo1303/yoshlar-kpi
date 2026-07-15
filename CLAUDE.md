@@ -73,6 +73,7 @@ This means `localhost:8000` serves the full app without a separate Vite server.
   - `score` — float, set by admin on approval
   - Optional direction-specific fields: `event_name/type/youth_count/location/event_time` (dir 4), `profilaktika_type` (dir 5), `student_fio` (dir 8), `startup_name/startup_owner_fio` (dir 9)
 - **`TaskAttachment`** — FK → `KPITask`, `related_name='attachments'`. Files at `kpi_uploads/%Y/%m/`.
+- **`KPIMonthPlan`** — Monthly plan per direction. Fields: `direction` (CharField matching `KPIDirection.key`), `month` (DateField `YYYY-MM-01`), `target_count` (int), `plan_dates` (JSONField — list of date strings for planned events).
 
 ### API endpoints
 
@@ -90,10 +91,17 @@ All under `/api/`. Auth endpoints are open; `/api/admin/*` requires `IsAdminUser
 | POST | `/api/admin/review/<task_id>/` | `{action, score}` or `{action, admin_comment}` |
 | GET/POST | `/api/admin/bulk-score/?direction=&date=` | Batch score entry (used for `admin_scored` directions) |
 | GET | `/api/admin/districts/?month=` | Ranking of all 76 mahallas |
+| GET | `/api/admin/month-plan/?direction=&month=` | Get/set monthly plan targets and dates |
+| POST | `/api/admin/month-plan/` | Save plan: `{direction, month, target_count, plan_dates}` |
+| GET | `/api/admin/mfy-status/?month=` | Per-mahalla status grid across all directions |
+| POST | `/api/admin/bulk-review/` | Approve/reject multiple tasks at once |
 | GET | `/api/user/dashboard/?month=` | Authenticated user's scores per direction |
 | POST | `/api/user/submit/` | `multipart/form-data` — direction, month, files, optional fields |
+| GET/PATCH | `/api/user/profile/` | View or update profile/password |
 
 `review` actions: `"tasdiqlash"` (requires `score` in `[0, max_score]`) or `"rad_etish"` (requires `admin_comment`). Task must be `sariq`.
+
+`user/submit/` reads EXIF date from uploaded images when available; falls back to upload timestamp.
 
 ### Serializers (`src/api/serializer/`)
 
@@ -115,11 +123,21 @@ React 19 + Vite 8 + Tailwind CSS 4 + lucide-react + jsPDF.
 - **Admin/Staff** → `AdminPanel`: sidebar with 10 direction buttons + reyting links; main area shows `TaskSlider` (file review) or `DailyScoreTable` (bulk scoring) depending on `direction.admin_scored`
 - **Regular user (MFY leader)** → `UserDashboard`: direction cards for uploading evidence, sidebar with rank/score/stats
 
+**Dark mode:** toggled via a button in the header; persists to `localStorage`. `App.jsx` applies/removes the `dark` class on `<html>`. All components use Tailwind `dark:` variants.
+
 **Key component decisions:**
 - `AdminPanel` — `admin_scored` flag on direction drives whether to show `DailyScoreTable` (batch attendance/score entry) vs `TaskSlider` (individual file review)
 - `DailyScoreTable` — used for `1_ijro` (daily attendance toggle 0/1) and other `admin_scored` directions (numeric score input); navigates workdays with prev/next
 - `TaskSlider` — card-based review UI with status tabs (sariq/yashil/qizil); approve sets score, reject requires comment
-- `DistrictsRanking` — fetches real data from `/api/admin/districts/`; has PDF export per mahalla row; two tabs: umumiy (full table) and yo'nalish (per-direction ranked list)
+- `DistrictsRanking` — fetches real data from `/api/admin/districts/`; has PDF export per mahalla row (jsPDF + html2canvas); two tabs: umumiy (full table) and yo'nalish (per-direction ranked list)
+- `MonthPlanBar` — calendar UI for admin to set monthly plan targets and mark specific plan dates per direction; uses `/api/admin/month-plan/`
+- `BrendReviewPanel` — specialized review UI for direction 7 (brend); separate from generic `TaskSlider`
+- `MFYStatusPanel` — grid showing per-mahalla completion status across all directions; uses `/api/admin/mfy-status/`
 - `UserDashboard` — `DirectionCard` is clickable only when `dir.is_uploadable && DIR_FIELDS[dir.direction]` both true; opens `UploadModal`
+- `ProfileModal` — lets regular users update their display name and change password via `/api/user/profile/`
 
 **`DIR_FIELDS` in `UserDashboard.jsx`** — maps direction keys to extra form fields shown in upload modal. Directions not in this map (`1_ijro`, `10_nomenklatura`) are not user-uploadable.
+
+## Tests
+
+No test files exist in this project. The Django test runner is available but unused.
