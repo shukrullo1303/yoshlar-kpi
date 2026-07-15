@@ -117,12 +117,17 @@ export function TaskSlider({ direction, maxScore, month }) {
   const [planScore, setPlanScore] = useState(null)
   const [planLoading, setPlanLoading] = useState(true)
 
+  // If no month selected, fall back to current month so plan always loads
+  const planMonth = month || (() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+  })()
+
   useEffect(() => {
-    if (!direction || !month) { setPlanScore(null); setPlanLoading(false); return }
+    if (!direction) { setPlanScore(null); setPlanLoading(false); return }
     setPlanLoading(true)
-    api.getMonthPlan(direction, month)
+    api.getMonthPlan(direction, planMonth)
       .then(data => {
-        // Use saved target_count, fall back to direction's default_target
         const tc = data.target_count ?? (data.default_target > 0 ? data.default_target : null)
         if (tc && data.max_score) {
           setPlanScore(Math.round((data.max_score / tc) * 100) / 100)
@@ -132,7 +137,7 @@ export function TaskSlider({ direction, maxScore, month }) {
       })
       .catch(() => setPlanScore(null))
       .finally(() => setPlanLoading(false))
-  }, [direction, month])
+  }, [direction, planMonth])
 
   const loadCounts = useCallback(async () => {
     try {
@@ -211,7 +216,7 @@ export function TaskSlider({ direction, maxScore, month }) {
   }
 
   const task = tasks[idx]
-  const scoreMax = planScore !== null ? planScore : maxScore
+  const scoreMax = planScore ?? maxScore  // per-task cap; falls back to direction max only if no plan/default
 
   return (
     <div className="space-y-5">
@@ -329,17 +334,16 @@ export function TaskSlider({ direction, maxScore, month }) {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
                           <input
-                            type="number" min={0} max={scoreMax || maxScore} step={0.01} value={score}
+                            type="number" min={0} max={scoreMax} step={0.01} value={score}
                             onChange={e => {
-                              const cap = scoreMax || maxScore
                               const v = Number(e.target.value)
-                              setScore(v > cap ? String(cap) : e.target.value)
+                              setScore(v > scoreMax ? String(scoreMax) : e.target.value)
                             }}
-                            placeholder={planScore !== null ? String(planScore) : '0.0'}
+                            placeholder={String(scoreMax)}
                             className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-slate-400 dark:text-slate-500">
-                            / {planScore ?? maxScore} ball (max)
+                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                            {scoreMax} ball max
                           </span>
                         </div>
                       )}
