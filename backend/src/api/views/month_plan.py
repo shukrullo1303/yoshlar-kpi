@@ -26,11 +26,22 @@ class AdminMonthPlanView(BaseAdminAPIView):
         except KPIDirection.DoesNotExist:
             pass
 
+        plan_dates_data = plan.plan_dates if plan else []
+        # Recalculate target_count from plan_dates to stay consistent
+        if plan and plan_dates_data:
+            recalc = sum(
+                int(item.get('count', 1)) if isinstance(item, dict) else 1
+                for item in plan_dates_data
+            )
+            target_count_out = recalc
+        else:
+            target_count_out = plan.target_count if plan else None
+
         return Response({
             'direction': direction,
             'month': month,
-            'target_count': plan.target_count if plan else None,
-            'plan_dates': plan.plan_dates if plan else [],
+            'target_count': target_count_out,
+            'plan_dates': plan_dates_data,
             'max_score': max_score,
         })
 
@@ -47,7 +58,11 @@ class AdminMonthPlanView(BaseAdminAPIView):
         if plan_dates is not None:
             if not isinstance(plan_dates, list):
                 return Response({'error': 'plan_dates array bolishi kerak'}, status=status.HTTP_400_BAD_REQUEST)
-            target_count = len(plan_dates)
+            # Each entry: {date, count} — sum all counts for total target
+            target_count = sum(
+                int(item.get('count', 1)) if isinstance(item, dict) else 1
+                for item in plan_dates
+            )
             if target_count < 1:
                 return Response({'error': 'Kamida bitta sana tanlang'}, status=status.HTTP_400_BAD_REQUEST)
         else:
