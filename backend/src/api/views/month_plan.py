@@ -20,14 +20,15 @@ class AdminMonthPlanView(BaseAdminAPIView):
 
         plan = KPIMonthPlan.objects.filter(direction_key=direction, month=month).first()
         max_score = None
+        default_target = 0
         try:
             dir_obj = KPIDirection.objects.get(key=direction)
             max_score = dir_obj.max_score
+            default_target = dir_obj.default_target
         except KPIDirection.DoesNotExist:
             pass
 
         plan_dates_data = plan.plan_dates if plan else []
-        # Recalculate target_count from plan_dates to stay consistent
         if plan and plan_dates_data:
             recalc = sum(
                 int(item.get('count', 1)) if isinstance(item, dict) else 1
@@ -43,6 +44,7 @@ class AdminMonthPlanView(BaseAdminAPIView):
             'target_count': target_count_out,
             'plan_dates': plan_dates_data,
             'max_score': max_score,
+            'default_target': default_target,
         })
 
     def post(self, request):

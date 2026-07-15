@@ -304,19 +304,18 @@ export function TaskSlider({ direction, maxScore, month }) {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
                         <input
-                          type="number" min={0} max={scoreMax || maxScore} step={0.25} value={score}
+                          type="number" min={0} max={scoreMax || maxScore} step={0.01} value={score}
                           onChange={e => {
                             const cap = scoreMax || maxScore
                             const v = Number(e.target.value)
                             setScore(v > cap ? String(cap) : e.target.value)
                           }}
-                          placeholder={planScore === null ? "0.0" : undefined}
-                          className="w-20 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.0"
+                          className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-slate-400 dark:text-slate-500">/ {scoreMax || maxScore}</span>
-                        {planScore !== null && (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">(max {maxScore})</span>
-                        )}
+                        <span className="text-sm text-slate-400 dark:text-slate-500">
+                          / {planScore !== null ? planScore : maxScore}
+                        </span>
                       </div>
                       {score === '' && planScore === null && (
                         <span className="text-xs text-amber-600 dark:text-amber-400">Avval reja qo'ying</span>

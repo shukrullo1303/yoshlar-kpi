@@ -238,7 +238,7 @@ export function BrendReviewPanel({ direction, maxScore, month }) {
           {mode === 'approve' && (
             <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
               <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Ball:</label>
-              <input type="number" min={0} max={planScore !== null ? planScore : maxScore} step={0.25} value={score}
+              <input type="number" min={0} max={planScore !== null ? planScore : maxScore} step={0.01} value={score}
                 onChange={e => {
                   const cap = planScore !== null ? planScore : maxScore
                   const v = Number(e.target.value)
@@ -247,6 +247,7 @@ export function BrendReviewPanel({ direction, maxScore, month }) {
                 placeholder="0.0"
                 className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
               <span className="text-sm text-slate-400">/ {planScore !== null ? planScore : maxScore}</span>
+              <span className="text-xs text-slate-500">(1 topshiriq uchun max)</span>
               {score === '' && planScore === null && (
                 <span className="text-xs text-amber-600 dark:text-amber-400">Avval reja qo'ying</span>
               )}

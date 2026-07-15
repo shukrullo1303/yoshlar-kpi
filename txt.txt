@@ -1,2 +1,10 @@
 admin panelda: 
 10-yonalish har oyda yangilanib tursin, har oyni ohirida baholansin deylik 25-sanadan keyin ochilsin baholash 1oy davomida qanday yuritilgan bilish uchun
+2-yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin
+3-yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin, haftalik default 2 ta reja qoyilsin, shunga qarab haftalik maximal ballni bittasiga 2 ga bolib ketiladi
+4-yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin reja haftasiga deafult 1 ta boladi lekin admin tomonidan maximal haftalik baldan kamroq bal qoyish imkoni bolsin 
+5-yonalish  haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin, defaulet reja 2
+6- yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin default reja 1
+7-yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin, reja haftasiag defualt 10ta, bunda yuklangan fayllarni alohida belgilab tanlash imkoni bolsin yuklangan fayllarni har biri uchun bittadan reja barjirilishiga qabul qilish mummkin bolsin
+8-yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin, reja haftasiga default 2
+9-yonalish haftalik rejalarni hisobga olgan holda ballarni avtomatik qoyib borsin, reja defualt 1 

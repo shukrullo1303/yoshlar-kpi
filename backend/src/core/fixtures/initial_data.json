@@ -1,4 +1,4 @@
-[
+ï»¿[
 {
   "model": "core.kpidirection",
   "pk": 1,
@@ -12,8 +12,9 @@
     "admin_scored": true,
     "is_uploadable": false,
     "info": "Har ish kunida admin tomonidan baholanadi. Ishga kelish tartib-intizomi.",
-    "how": "Yuklash shart emas — admin kunlik qayd qiladi.",
-    "is_active": true
+    "how": "Yuklash shart emas ï¿½ admin kunlik qayd qiladi.",
+    "is_active": true,
+    "default_target": 0
   }
 },
 {
@@ -30,7 +31,8 @@
     "is_uploadable": true,
     "info": "Yoshlar balansi ro'yxati va yangilanishlarini tasdiqlang.",
     "how": "Ro'yxat, raqam va hujjat fayllarini yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 8
   }
 },
 {
@@ -47,7 +49,8 @@
     "is_uploadable": true,
     "info": "Yoshlarni ishga joylashtirganligi haqida hisobot.",
     "how": "Ish joyiga yo'llanma, buyruq yoki tasdiqlash xatini yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 8
   }
 },
 {
@@ -64,7 +67,8 @@
     "is_uploadable": true,
     "info": "Sport, madaniy, ijodiy tadbirlar tashkillashtirish.",
     "how": "Tadbir surat va videosi, ishtirokchilar ro'yxatini yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 4
   }
 },
 {
@@ -81,7 +85,8 @@
     "is_uploadable": true,
     "info": "Ijtimoiy xavfli holatlar oldini olish bo'yicha tadbirlar.",
     "how": "Profilaktik suhbat bayonnomasini yoki PQ-1 hujjatini yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 8
   }
 },
 {
@@ -98,7 +103,8 @@
     "is_uploadable": true,
     "info": "Fuqarolar murojaatlariga o'z vaqtida javob berish.",
     "how": "Murojaat va javob hujjatini yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 4
   }
 },
 {
@@ -115,7 +121,8 @@
     "is_uploadable": true,
     "info": "Brend loyihalar va shaxsiy rivojlanish tadbirlari.",
     "how": "Loyiha tavsifi, surat va natijalarni yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 10
   }
 },
 {
@@ -132,7 +139,8 @@
     "is_uploadable": true,
     "info": "Ta'lim muassasalaridagi yoshlar bilan ishlash natijalari.",
     "how": "O'quvchi ma'lumotlari va tasdiqlash hujjatini yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 8
   }
 },
 {
@@ -149,7 +157,8 @@
     "is_uploadable": true,
     "info": "Zamonaviy kasblar va startap loyihalarni qo'llab-quvvatlash.",
     "how": "Startap nomi, egasi va tasdiqlovchi hujjatni yuklang.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 4
   }
 },
 {
@@ -166,7 +175,8 @@
     "is_uploadable": false,
     "info": "Nomenklatura hujjatlar to'g'ri yuritilishi oylik tekshiriladi.",
     "how": "Hujjatlar admin tomonidan reja asosida tekshiriladi.",
-    "is_active": true
+    "is_active": true,
+    "default_target": 0
   }
 },
 {
@@ -231,15 +241,40 @@
   "pk": 4,
   "fields": {
     "created_at": "2026-07-15T05:59:43.794Z",
-    "updated_at": "2026-07-15T05:59:43.794Z",
+    "updated_at": "2026-07-15T07:09:05.418Z",
     "direction_key": "3_bandlik",
     "month": "2026-07-01",
-    "target_count": 5,
+    "target_count": 4,
     "plan_dates": [
       {
-        "date": "2026-07-01",
+        "date": "2026-07-06",
         "count": 2
       },
+      {
+        "date": "2026-07-13",
+        "count": 2
+      },
+      {
+        "date": "2026-07-20",
+        "count": 2
+      },
+      {
+        "date": "2026-07-27",
+        "count": 2
+      }
+    ]
+  }
+},
+{
+  "model": "core.kpimonthplan",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-07-15T07:08:59.943Z",
+    "updated_at": "2026-07-15T07:08:59.943Z",
+    "direction_key": "2_balans",
+    "month": "2026-07-01",
+    "target_count": 4,
+    "plan_dates": [
       {
         "date": "2026-07-06",
         "count": 2

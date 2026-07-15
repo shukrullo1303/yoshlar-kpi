@@ -11,6 +11,11 @@ class KPIDirection(BaseModel):
     info = models.TextField(blank=True, verbose_name="Qisqacha ma'lumot")
     how = models.TextField(blank=True, verbose_name="Qanday bajarish kerak")
     is_active = models.BooleanField(default=True, verbose_name="Faol")
+    default_target = models.PositiveIntegerField(
+        default=0, blank=True,
+        verbose_name="Oylik reja default soni",
+        help_text="0 = default yo'q. Reja sahifasida boshlang'ich qiymat sifatida ishlatiladi.",
+    )
 
     class Meta:
         ordering = ['order']

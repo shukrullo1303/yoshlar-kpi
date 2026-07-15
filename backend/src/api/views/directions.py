@@ -20,6 +20,7 @@ class DirectionsView(APIView):
                 'is_uploadable': d.is_uploadable,
                 'info': d.info,
                 'how': d.how,
+                'default_target': d.default_target,
             }
             for d in directions
         ]

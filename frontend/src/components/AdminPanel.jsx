@@ -107,37 +107,11 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
 
     // Dedicated Reja page
     if (nav === NAV_REJA) {
-      const rejaDirections = directions.filter(d => !d.adminScored)
-      const activeKey      = rejaDirection || rejaDirections[0]?.key || ''
-      const activeRejaDir  = rejaDirections.find(d => d.key === activeKey)
       return (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-white">Oylik Reja</h2>
-            <p className="text-slate-400 text-sm mt-1">Yo'nalishni tanlang va haftalar bo'yicha reja kiriting</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {rejaDirections.map(d => (
-              <button key={d.key} onClick={() => setRejaDirection(d.key)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  activeKey === d.key
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}>
-                {d.label}
-              </button>
-            ))}
-          </div>
-          {activeRejaDir && (
-            <MonthPlanBar
-              key={activeKey}
-              direction={activeKey}
-              month={activeMonth}
-              maxScore={activeRejaDir.maxScore}
-              defaultOpen
-            />
-          )}
-        </div>
+        <MonthPlanBar
+          directions={directionsProp}
+          month={activeMonth}
+        />
       )
     }
 
