@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 from config.settings.base import *
+
+# .env faylidan muhit o'zgaruvchilarini yuklash
+load_dotenv(Path(__file__).resolve().parent.parent.parent / '.env')
 
 # BASE_DIR fix: base.py sets it to backend/config/, we need backend/
 BASE_DIR = BASE_DIR.parent
