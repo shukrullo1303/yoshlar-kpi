@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate, login, logout
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,6 +14,7 @@ class CsrfView(APIView):
         return Response({'detail': 'CSRF cookie set'})
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -53,11 +54,13 @@ class LoginView(APIView):
         })
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         logout(request)
+        request.session.flush()
         return Response({'detail': 'Chiqildi'})
 
 
