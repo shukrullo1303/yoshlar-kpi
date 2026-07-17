@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { LogOut, Upload, CheckCircle2, Clock, XCircle, X, Loader2, ImageIcon, FileText, Trash2, UserCog } from 'lucide-react'
+import { LogOut, Upload, CheckCircle2, Clock, XCircle, X, Loader2, ImageIcon, FileText, Trash2, UserCog, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
 
 function pct(score, max) {
@@ -268,7 +268,136 @@ function UploadModal({ dir, month, onClose, onSuccess }) {
   )
 }
 
-function DirectionCard({ dir, index, onUpload }) {
+function RejectedModal({ direction, directionLabel, month, directions, onClose }) {
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.getRejectedTasks(direction, month)
+      .then(setTasks)
+      .catch(() => setTasks([]))
+      .finally(() => setLoading(false))
+  }, [direction, month])
+
+  const dirLabel = (key) => {
+    if (directionLabel) return directionLabel
+    return directions?.find(d => d.direction === key)?.label || key
+  }
+
+  const UZ_MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr']
+  const formatMonth = (m) => {
+    if (!m) return ''
+    const [y, mo] = m.split('-')
+    return `${UZ_MONTHS[parseInt(mo) - 1]} ${y}`
+  }
+
+  function isImage(url) {
+    return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url || '')
+  }
+  function toRelative(url) {
+    if (!url) return url
+    try {
+      const u = new URL(url)
+      if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return u.pathname + u.search
+    } catch (_) {}
+    return url
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+              <XCircle className="w-4.5 h-4.5 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight truncate">
+                {directionLabel ? `${directionLabel} — rad etilganlar` : "Barcha rad etilgan topshiriqlar"}
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">Eng yangilaridan boshlab</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 flex-shrink-0">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 text-sm">Rad etilgan topshiriqlar yo'q</div>
+          ) : tasks.map(task => (
+            <div key={task.id} className="rounded-xl border border-red-200 dark:border-red-900/50 overflow-hidden">
+              {/* Top bar */}
+              <div className="bg-red-50 dark:bg-red-900/20 px-4 py-2.5 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-red-700 dark:text-red-400 truncate">{dirLabel(task.direction)}</p>
+                  <p className="text-xs text-red-500 dark:text-red-500">{formatMonth(task.month)}</p>
+                </div>
+                <span className="text-xs text-red-400 dark:text-red-500 flex-shrink-0">{task.created_at}</span>
+              </div>
+
+              {/* Rejection reason */}
+              {task.admin_comment && (
+                <div className="px-4 py-3 bg-white dark:bg-slate-800 border-b border-red-100 dark:border-red-900/30">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-0.5">Rad etish sababi:</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{task.admin_comment}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments preview */}
+              {task.attachments?.length > 0 && (
+                <div className="px-4 py-3 bg-white dark:bg-slate-800 flex gap-2 flex-wrap">
+                  {task.attachments.slice(0, 4).map((att, i) => {
+                    const url = toRelative(att.file)
+                    return isImage(url) ? (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                        className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-600 flex-shrink-0 hover:opacity-80 transition-opacity">
+                        <img src={url} alt="" className="w-full h-full object-cover bg-slate-100 dark:bg-slate-700" />
+                      </a>
+                    ) : (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                        className="w-14 h-14 rounded-lg border border-slate-200 dark:border-slate-600 flex-shrink-0 flex flex-col items-center justify-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                        <FileText className="w-5 h-5 text-slate-400" />
+                        <span className="text-[9px] text-slate-400">PDF</span>
+                      </a>
+                    )
+                  })}
+                  {task.attachments.length > 4 && (
+                    <div className="w-14 h-14 rounded-lg border border-slate-200 dark:border-slate-600 flex-shrink-0 flex items-center justify-center bg-slate-50 dark:bg-slate-700">
+                      <span className="text-xs font-bold text-slate-500">+{task.attachments.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-700">
+          <button onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+            Yopish
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DirectionCard({ dir, index, onUpload, onViewRejected }) {
   const canUpload = dir.is_uploadable && !!DIR_FIELDS[dir.direction]
   const p = pct(dir.score, dir.max_score)
   const barColor = p >= 80 ? 'bg-emerald-500' : p >= 50 ? 'bg-amber-500' : p > 0 ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-700'
@@ -344,9 +473,11 @@ function DirectionCard({ dir, index, onUpload }) {
               </span>
             )}
             {dir.rejected_count > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+              <button
+                onClick={e => { e.stopPropagation(); onViewRejected(dir) }}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
                 <XCircle className="w-3 h-3" /> {dir.rejected_count} rad etilgan
-              </span>
+              </button>
             )}
             {!dir.approved_count && !dir.pending_count && !dir.rejected_count && (
               <span className="text-xs text-slate-400">Hali material yuklanmagan — bosing</span>
@@ -365,6 +496,7 @@ export function UserDashboard({ user, directions: directionsProp = [], onLogout,
   const [error, setError] = useState(null)
   const [openDir, setOpenDir] = useState(null)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [rejectedDir, setRejectedDir] = useState(null) // {direction, label} | 'all'
 
   const activeMonth = month || null
 
@@ -460,7 +592,10 @@ export function UserDashboard({ user, directions: directionsProp = [], onLogout,
               {/* Cards grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {data.directions.map((dir, i) => (
-                  <DirectionCard key={dir.direction} dir={dir} index={i + 1} onUpload={() => setOpenDir(dir)} />
+                  <DirectionCard key={dir.direction} dir={dir} index={i + 1}
+                    onUpload={() => setOpenDir(dir)}
+                    onViewRejected={d => setRejectedDir({ direction: d.direction, label: d.label })}
+                  />
                 ))}
               </div>
             </div>
@@ -515,12 +650,22 @@ export function UserDashboard({ user, directions: directionsProp = [], onLogout,
                   {[
                     { label: 'Kutilmoqda',   count: data.directions.reduce((s,d)=>s+d.pending_count,0),  bg:'bg-amber-50 dark:bg-amber-900/20',   text:'text-amber-700 dark:text-amber-400'  },
                     { label: 'Tasdiqlangan', count: data.directions.reduce((s,d)=>s+d.approved_count,0), bg:'bg-emerald-50 dark:bg-emerald-900/20', text:'text-emerald-700 dark:text-emerald-400' },
-                    { label: 'Rad etilgan',  count: data.directions.reduce((s,d)=>s+d.rejected_count,0), bg:'bg-red-50 dark:bg-red-900/20',     text:'text-red-700 dark:text-red-400'    },
+                    { label: 'Rad etilgan',  count: data.directions.reduce((s,d)=>s+d.rejected_count,0), bg:'bg-red-50 dark:bg-red-900/20',     text:'text-red-700 dark:text-red-400',
+                      onClick: data.directions.reduce((s,d)=>s+d.rejected_count,0) > 0
+                        ? () => setRejectedDir('all') : undefined },
                   ].map(s => (
-                    <div key={s.label} className={`flex justify-between items-center rounded-xl px-4 py-2.5 ${s.bg}`}>
-                      <span className="text-sm text-slate-600 dark:text-slate-300">{s.label}</span>
-                      <span className={`text-base font-bold ${s.text}`}>{s.count}</span>
-                    </div>
+                    s.onClick ? (
+                      <button key={s.label} onClick={s.onClick}
+                        className={`w-full flex justify-between items-center rounded-xl px-4 py-2.5 ${s.bg} hover:opacity-80 transition-opacity text-left`}>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">{s.label}</span>
+                        <span className={`text-base font-bold ${s.text}`}>{s.count}</span>
+                      </button>
+                    ) : (
+                      <div key={s.label} className={`flex justify-between items-center rounded-xl px-4 py-2.5 ${s.bg}`}>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">{s.label}</span>
+                        <span className={`text-base font-bold ${s.text}`}>{s.count}</span>
+                      </div>
+                    )
                   ))}
                 </div>
               </div>
@@ -539,6 +684,15 @@ export function UserDashboard({ user, directions: directionsProp = [], onLogout,
             setProfileOpen(false)
             if (onUserUpdate) onUserUpdate(fullName)
           }}
+        />
+      )}
+      {rejectedDir && (
+        <RejectedModal
+          direction={rejectedDir === 'all' ? undefined : rejectedDir.direction}
+          directionLabel={rejectedDir === 'all' ? undefined : rejectedDir.label}
+          month={activeMonth}
+          directions={data?.directions}
+          onClose={() => setRejectedDir(null)}
         />
       )}
     </div>

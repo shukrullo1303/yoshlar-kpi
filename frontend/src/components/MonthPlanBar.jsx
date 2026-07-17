@@ -70,41 +70,41 @@ export function MonthPlanBar({ directions = [], month }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-white">Oylik Reja</h2>
-        <p className="text-slate-400 text-sm mt-0.5">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Oylik Reja</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
           Har yo'nalish uchun oyda nechta topshiriq kutilishini kiriting.
           Ball avtomatik taqsimlanadi: <span className="text-blue-400">max ball ÷ reja soni</span>
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-700">
+      <div className="overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-700">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700 bg-slate-900/60">
-              <th className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
+              <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Yo'nalish
               </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide w-28">
+              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-28">
                 Max ball
               </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide w-36">
+              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-36">
                 Oylik reja (ta)
               </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide w-32">
+              <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide w-32">
                 Ball / topshiriq
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
             {planDirs.map(dir => {
               const count = targets[dir.key] || 1
               const perItem = count > 0
                 ? (dir.max_score / count).toFixed(2)
                 : '—'
               return (
-                <tr key={dir.key} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-5 py-3 text-slate-200 font-medium">{dir.label}</td>
-                  <td className="px-4 py-3 text-center text-slate-400">{dir.max_score}</td>
+                <tr key={dir.key} className="hover:bg-slate-100 dark:hover:bg-slate-800/40 transition-colors">
+                  <td className="px-5 py-3 text-slate-700 dark:text-slate-200 font-medium">{dir.label}</td>
+                  <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">{dir.max_score}</td>
                   <td className="px-4 py-3">
                     <input
                       type="number"
@@ -115,7 +115,7 @@ export function MonthPlanBar({ directions = [], month }) {
                         const n = Math.max(1, parseInt(e.target.value) || 1)
                         setTargets(p => ({ ...p, [dir.key]: n }))
                       }}
-                      className="w-full text-center bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full text-center bg-white border border-slate-300 dark:bg-slate-700 dark:border-slate-600 rounded-lg px-2 py-1.5 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </td>
                   <td className="px-4 py-3 text-center text-emerald-400 font-bold text-base">

@@ -108,4 +108,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ first_name, last_name, old_password, new_password }),
     }),
+  getRejectedTasks: (direction, month) => {
+    const params = new URLSearchParams()
+    if (direction) params.set('direction', direction)
+    if (month) params.set('month', month)
+    const qs = params.toString()
+    return request(`/user/rejected-tasks/${qs ? `?${qs}` : ''}`)
+  },
 }
