@@ -5,6 +5,7 @@ DIRECTIONS = [
     {
         'key': '1_ijro',
         'label': 'Ijro intizomi',
+        'max_score': 20,
         'order': 1,
         'admin_scored': True,
         'is_uploadable': False,
@@ -13,6 +14,7 @@ DIRECTIONS = [
     {
         'key': '2_balans',
         'label': 'Yoshlar balansi',
+        'max_score': 5,
         'order': 2,
         'admin_scored': False,
         'is_uploadable': True,
@@ -21,6 +23,7 @@ DIRECTIONS = [
     {
         'key': '3_bandlik',
         'label': 'Yoshlar bandligi',
+        'max_score': 15,
         'order': 3,
         'admin_scored': False,
         'is_uploadable': True,
@@ -29,6 +32,7 @@ DIRECTIONS = [
     {
         'key': '4_bosh_vaqt',
         'label': 'Bo\'sh vaqtni tashkil etish',
+        'max_score': 15,
         'order': 4,
         'admin_scored': False,
         'is_uploadable': True,
@@ -37,6 +41,7 @@ DIRECTIONS = [
     {
         'key': '5_profilaktika',
         'label': 'Huquqbuzarlik profilaktikasi',
+        'max_score': 10,
         'order': 5,
         'admin_scored': False,
         'is_uploadable': True,
@@ -45,6 +50,7 @@ DIRECTIONS = [
     {
         'key': '6_murojaat',
         'label': 'Murojaatlar bilan ishlash',
+        'max_score': 5,
         'order': 6,
         'admin_scored': False,
         'is_uploadable': True,
@@ -53,6 +59,7 @@ DIRECTIONS = [
     {
         'key': '7_brend',
         'label': 'Yoshlar brendi',
+        'max_score': 10,
         'order': 7,
         'admin_scored': False,
         'is_uploadable': True,
@@ -61,6 +68,7 @@ DIRECTIONS = [
     {
         'key': '8_talim',
         'label': 'Ta\'lim va kasbiy rivojlanish',
+        'max_score': 5,
         'order': 8,
         'admin_scored': False,
         'is_uploadable': True,
@@ -69,6 +77,7 @@ DIRECTIONS = [
     {
         'key': '9_startap',
         'label': 'Startap va tadbirkorlik',
+        'max_score': 5,
         'order': 9,
         'admin_scored': False,
         'is_uploadable': True,
@@ -77,6 +86,7 @@ DIRECTIONS = [
     {
         'key': '10_nomenklatura',
         'label': 'Nomenklatura',
+        'max_score': 10,
         'order': 10,
         'admin_scored': True,
         'is_uploadable': False,

@@ -1,10 +1,8 @@
-import random
 import re
 import unicodedata
-from datetime import date
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from src.core.models import Profile, KPITask
+from src.core.models import Profile
 
 
 def slugify_mfy(name):
@@ -42,16 +40,6 @@ MAHALLALAR = [
     "Zanken",
 ]
 
-MAX_SCORES = {
-    '1_ijro': 20, '2_balans': 5, '3_bandlik': 15, '4_bosh_vaqt': 15,
-    '5_profilaktika': 10, '6_murojaat': 5, '7_brend': 10, '8_talim': 5,
-    '9_startap': 5, '10_nomenklatura': 10,
-}
-
-DIRECTION_KEYS = list(MAX_SCORES.keys())
-MONTH = date(2026, 7, 1)
-
-
 class Command(BaseCommand):
     help = 'Seed initial data'
 
@@ -70,7 +58,6 @@ class Command(BaseCommand):
             self.stdout.write(f'Eski {old_count} ta mfy_XX user ochirildi')
 
         profiles_created = 0
-        tasks_created = 0
 
         for i, mahalla in enumerate(MAHALLALAR, start=1):
             username = slugify_mfy(mahalla)
@@ -92,22 +79,6 @@ class Command(BaseCommand):
 
             self.stdout.write(f'  [{i:02d}/76] {username} OK')
 
-            # 3 ta tasdiqlangan task
-            random.seed(profile.id)
-            chosen_dirs = random.sample(DIRECTION_KEYS, 3)
-            for dir_key in chosen_dirs:
-                max_s = MAX_SCORES[dir_key]
-                score = round(random.uniform(max_s * 0.5, max_s), 1)
-                _, created = KPITask.objects.get_or_create(
-                    leader=profile,
-                    direction=dir_key,
-                    month=MONTH,
-                    status='yashil',
-                    defaults={'score': score}
-                )
-                if created:
-                    tasks_created += 1
-
         self.stdout.write(self.style.SUCCESS(
-            f'\nSeed tugadi: {profiles_created} profil, {tasks_created} task yaratildi.'
+            f'\nSeed tugadi: {profiles_created} profil yaratildi.'
         ))
