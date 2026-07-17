@@ -61,11 +61,13 @@ CORS_ALLOW_CREDENTIALS = True
 X_FRAME_OPTIONS             = 'SAMEORIGIN'  # PDF iframe uchun kerak
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# Nginx HTTPS proxy orqali ishlaganda X-Forwarded-Proto headerini ishon
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # HTTPS tayyor bo'lgandan keyin True ga o'zgartiring
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE    = False
-CSRF_COOKIE_SAMESITE  = 'Lax'
-CSRF_COOKIE_HTTPONLY  = False
+_use_https = os.environ.get('USE_HTTPS', 'false').lower() == 'true'
+SESSION_COOKIE_SECURE = _use_https
+CSRF_COOKIE_SECURE    = _use_https
 
 # Logging: production xatolarini ko'rish uchun
 LOGGING = {
