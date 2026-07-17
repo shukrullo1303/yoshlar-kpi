@@ -1,0 +1,27 @@
+[Unit]
+Description=Asaka KPI — Gunicorn WSGI server
+After=network.target mysql.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+RuntimeDirectory=gunicorn
+WorkingDirectory=/var/www/asaka-kpi/backend
+EnvironmentFile=/var/www/asaka-kpi/backend/.env
+ExecStart=/var/www/asaka-kpi/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/run/gunicorn/asaka-kpi.sock \
+    --access-logfile /var/log/gunicorn/asaka-kpi-access.log \
+    --error-logfile /var/log/gunicorn/asaka-kpi-error.log \
+    --timeout 60 \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -58,7 +58,29 @@ CSRF_TRUSTED_ORIGINS  = _origins
 CORS_ALLOW_CREDENTIALS = True
 
 # ── Security headers ──────────────────────────────────────────────────────────
-X_FRAME_OPTIONS            = 'SAMEORIGIN'  # PDF iframe uchun kerak
+X_FRAME_OPTIONS             = 'SAMEORIGIN'  # PDF iframe uchun kerak
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SESSION_COOKIE_SECURE      = True
-CSRF_COOKIE_SECURE         = True
+
+# Nginx HTTPS proxy orqali ishlaganda X-Forwarded-Proto headerini ishon
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# HTTPS tayyor bo'lgandan keyin True ga o'zgartiring
+_use_https = os.environ.get('USE_HTTPS', 'false').lower() == 'true'
+SESSION_COOKIE_SECURE = _use_https
+CSRF_COOKIE_SECURE    = _use_https
+
+# Logging: production xatolarini ko'rish uchun
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+        },
+    },
+    'root': {
+        'handlers': ['file'],
+        'level': 'WARNING',
+    },
+}
