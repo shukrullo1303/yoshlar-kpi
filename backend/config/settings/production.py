@@ -12,7 +12,7 @@ BASE_DIR = BASE_DIR.parent
 # ── Security ──────────────────────────────────────────────────────────────────
 SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = False
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'asaka-kpi.uz,www.asaka-kpi.uz').split(',') if h.strip()]
 
 # ── Frontend dist ─────────────────────────────────────────────────────────────
 FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'
