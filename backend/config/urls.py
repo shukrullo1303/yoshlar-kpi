@@ -8,9 +8,9 @@ from django.views.static import serve as static_serve
 FRONTEND_DIST = getattr(settings, 'FRONTEND_DIST', None)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Django admin /django-admin/ ga ko'chirildi — /admin/ React uchun bo'shatildi
+    path('django-admin/', admin.site.urls),
     path('api/', include('src.api.main_urls')),
-    # Media fayllarni production da ham serve qilish (DEBUG=False da static() ishlamaydi)
     re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
 ]
 
@@ -18,5 +18,5 @@ if FRONTEND_DIST and FRONTEND_DIST.exists():
     urlpatterns += [
         re_path(r'^assets/(?P<path>.*)$', static_serve, {'document_root': FRONTEND_DIST / 'assets'}),
         re_path(r'^(?P<path>favicon\.svg|icons\.svg)$', static_serve, {'document_root': FRONTEND_DIST}),
-        re_path(r'^(?!admin/|api/|media/).*$', TemplateView.as_view(template_name='index.html')),
+        re_path(r'^(?!django-admin/|api/|media/).*$', TemplateView.as_view(template_name='index.html')),
     ]
