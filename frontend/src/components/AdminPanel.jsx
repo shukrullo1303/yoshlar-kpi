@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Lock, Users, UserPlus, Sliders, Archive } from 'lucide-react'
+import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Users, UserPlus, Sliders, Archive } from 'lucide-react'
 import { api } from '../services/api'
 import { DistrictsRanking } from './DistrictsRanking'
 import { DailyScoreTable } from './DailyScoreTable'
@@ -80,9 +80,7 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
   })
 
   const activeDirection  = directions.find(d => d.key === nav)
-  const totalPending     = stats.reduce((s, d) => s + (d.sariq_count  ?? 0), 0)
-  const totalApproved    = stats.reduce((s, d) => s + (d.yashil_count ?? 0), 0)
-  const totalRejected    = stats.reduce((s, d) => s + (d.qizil_count  ?? 0), 0)
+  const totalPending = stats.reduce((s, d) => s + (d.sariq_count ?? 0), 0)
 
   const handleNav = (key) => {
     navigate(`/admin/${NAV_TO_URL[key] || key}`)
@@ -170,29 +168,6 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               monthTo={activeMonthTo || activeMonthFrom}
             />
           ) : (() => {
-            // 10_nomenklatura locks until 25th of the selected month
-            if (nav === '10_nomenklatura') {
-              const today = new Date()
-              const refMonth = activeMonth || `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`
-              const [y, m] = refMonth.split('-').map(Number)
-              const unlockDate = new Date(y, m - 1, 25)
-              if (today < unlockDate) {
-                const UZ_MONTHS_SHORT = ['Yan','Fev','Mar','Apr','May','Iyu','Iyu','Avg','Sen','Okt','Noy','Dek']
-                return (
-                  <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-                      <Lock className="w-8 h-8 text-amber-400" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-slate-800 dark:text-slate-200">Baholash hali ochilmagan</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        10-yo'nalish baholash <span className="text-amber-400 font-semibold">25-{UZ_MONTHS_SHORT[m-1]}</span>dan keyin ochiladi
-                      </p>
-                    </div>
-                  </div>
-                )
-              }
-            }
             return (
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm">
                 <DailyScoreTable
@@ -349,11 +324,6 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
             {totalPending > 0 && (
               <span className="text-xs font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full flex-shrink-0" title="Kutilmoqda">
                 {totalPending}
-              </span>
-            )}
-            {totalApproved > 0 && (
-              <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline" title="Tasdiqlangan">
-                ✓{totalApproved}
               </span>
             )}
           </div>

@@ -377,6 +377,305 @@ function IjroCalendarView({ month }) {
   )
 }
 
+// ─── 10_nomenklatura: Weekly score view ───────────────────────────────────
+
+function getNomenklaturaWeeks(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const starts = [1, 8, 15, 22]
+  if (daysInMonth >= 29) starts.push(29)
+  return starts.map((start, idx) => {
+    const end = idx < starts.length - 1 ? starts[idx + 1] - 1 : daysInMonth
+    const dt = new Date(year, month, start)
+    return {
+      start,
+      end,
+      dt,
+      dateStr: toDateStr(dt),
+      label: `${idx + 1}-hafta (${start}–${end})`,
+    }
+  })
+}
+
+function NomenklaturaWeeklyView({ month }) {
+  const initDate = month ? new Date(month) : (() => {
+    const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1)
+  })()
+  const [currentMonth, setCurrentMonth] = useState(initDate)
+  const [selectedWeek, setSelectedWeek] = useState(null) // dateStr of week start
+  const [weekData, setWeekData] = useState({}) // dateStr -> {rows, scorePerWeek}
+  const [rows, setRows] = useState([])
+  const [scores, setScores] = useState({}) // profile_id -> 0 or 1
+  const [scorePerWeek, setScorePerWeek] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState(null)
+
+  const year = currentMonth.getFullYear()
+  const month_ = currentMonth.getMonth()
+  const weeks = getNomenklaturaWeeks(year, month_)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  useEffect(() => {
+    if (month) setCurrentMonth(new Date(month))
+  }, [month])
+
+  useEffect(() => {
+    setSelectedWeek(null)
+    setRows([])
+    setScores({})
+    setWeekData({})
+  }, [currentMonth])
+
+  const loadWeek = useCallback(async (dateStr) => {
+    if (weekData[dateStr]) {
+      const cached = weekData[dateStr]
+      setRows(cached.rows)
+      setScorePerWeek(cached.scorePerWeek)
+      const init = {}
+      cached.rows.forEach(r => { init[r.profile_id] = r.score ?? cached.scorePerWeek })
+      setScores(init)
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.getBulkScores('10_nomenklatura', dateStr)
+      const r = data.rows || []
+      const spw = data.score_per_week || 0
+      setRows(r)
+      setScorePerWeek(spw)
+      const init = {}
+      r.forEach(row => { init[row.profile_id] = row.score ?? spw })
+      setScores(init)
+      setWeekData(prev => ({ ...prev, [dateStr]: { rows: r, scorePerWeek: spw } }))
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [weekData])
+
+  const selectWeek = (dateStr) => {
+    setSelectedWeek(dateStr)
+    setSaved(false)
+    loadWeek(dateStr)
+  }
+
+  const handleSave = async () => {
+    if (!selectedWeek) return
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = rows.map(r => ({
+        profile_id: r.profile_id,
+        score: parseFloat(scores[r.profile_id] ?? 0) || 0,
+      }))
+      await api.saveBulkScores('10_nomenklatura', selectedWeek, payload)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+      setWeekData(prev => {
+        const next = { ...prev }
+        delete next[selectedWeek]
+        return next
+      })
+      await loadWeek(selectedWeek)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const toggle = (pid) => {
+    setScores(prev => {
+      const cur = parseFloat(prev[pid] ?? 0) || 0
+      return { ...prev, [pid]: cur > 0 ? 0 : scorePerWeek }
+    })
+  }
+
+  const presentCount = rows.filter(r => (parseFloat(scores[r.profile_id] ?? 0) || 0) > 0).length
+
+  const getWeekStatus = (dateStr) => {
+    const cached = weekData[dateStr]
+    if (!cached) return null
+    const total = cached.rows.length
+    const done = cached.rows.filter(r => (r.score ?? 0) > 0).length
+    return { done, total }
+  }
+
+  const isFutureWeek = (dt) => {
+    const d = new Date(dt)
+    d.setHours(0, 0, 0, 0)
+    return d > today
+  }
+
+  return (
+    <div className="space-y-5 overflow-x-hidden">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setCurrentMonth(new Date(year, month_ - 1, 1))}
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="text-center">
+          <p className="font-bold text-slate-800 dark:text-slate-100 text-lg">
+            {MONTH_NAMES[month_]} {year}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {weeks.length} hafta · har hafta {(10 / weeks.length).toFixed(2)} ball
+          </p>
+        </div>
+        <button
+          onClick={() => setCurrentMonth(new Date(year, month_ + 1, 1))}
+          disabled={new Date(year, month_ + 1, 1) > new Date(today.getFullYear(), today.getMonth(), 1)}
+          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-30"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Week selector */}
+      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${weeks.length}, 1fr)` }}>
+        {weeks.map((w) => {
+          const status = getWeekStatus(w.dateStr)
+          const isSelected = selectedWeek === w.dateStr
+          const isFut = isFutureWeek(w.dt)
+          const allDone = status && status.done === status.total && status.total > 0
+          const someDone = status && status.done > 0 && !allDone
+          return (
+            <button
+              key={w.dateStr}
+              onClick={() => !isFut && selectWeek(w.dateStr)}
+              disabled={isFut}
+              className={`
+                rounded-xl border px-3 py-3 text-center transition-all
+                ${isFut ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:border-blue-400'}
+                ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'}
+                ${!isSelected && allDone ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : ''}
+                ${!isSelected && someDone ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' : ''}
+              `}
+            >
+              <p className="font-bold text-sm">{w.label}</p>
+              {status ? (
+                <p className={`text-xs mt-0.5 ${isSelected ? 'text-blue-200' : 'opacity-70'}`}>
+                  {status.done}/{status.total}
+                </p>
+              ) : (
+                <p className="text-xs mt-0.5 opacity-0">—</p>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Score table for selected week */}
+      {selectedWeek && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="font-semibold text-slate-800 dark:text-slate-100">
+                {weeks.find(w => w.dateStr === selectedWeek)?.label}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Har hafta: {scorePerWeek.toFixed(2)} ball · {weeks.length} hafta
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2">
+                <span className="font-bold text-blue-600">{presentCount}</span> / {rows.length} ta baholandi
+              </div>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              {saved && (
+                <span className="flex items-center gap-1 text-sm text-emerald-600 font-medium">
+                  <CheckCircle2 className="w-4 h-4" /> Saqlandi
+                </span>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={saving || loading}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Saqlash
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-800 text-white text-xs">
+                    <th className="px-4 py-3 text-left w-10">#</th>
+                    <th className="px-4 py-3 text-left">MFY nomi</th>
+                    <th className="px-4 py-3 text-center">Ball (max {scorePerWeek.toFixed(2)})</th>
+                    <th className="px-4 py-3 text-center w-28">Holat</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {rows.map((row, idx) => {
+                    const score = parseFloat(scores[row.profile_id] ?? 0) || 0
+                    const scored = score > 0
+                    return (
+                      <tr key={row.profile_id} className={`transition-colors ${scored ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-white dark:bg-slate-800'}`}>
+                        <td className="px-4 py-2.5 text-slate-400 text-xs font-mono">{idx + 1}</td>
+                        <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100">{row.mahalla_name} MFY</td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => toggle(row.profile_id)}
+                              className={`flex-shrink-0 transition-colors ${
+                                scored ? 'text-emerald-600 hover:text-emerald-700' : 'text-slate-300 dark:text-slate-600 hover:text-slate-400'
+                              }`}
+                            >
+                              {scored ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              max={scorePerWeek}
+                              step={0.5}
+                              value={scores[row.profile_id] ?? 0}
+                              onChange={e => {
+                                const val = Math.max(0, Math.min(scorePerWeek, parseFloat(e.target.value) || 0))
+                                setScores(prev => ({ ...prev, [row.profile_id]: val }))
+                              }}
+                              className="w-20 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-900 dark:bg-slate-700 dark:text-white"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-center">
+                          {row.task_id ? (
+                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Saqlangan</span>
+                          ) : (
+                            <span className="text-xs text-slate-300">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!selectedWeek && (
+        <p className="text-center text-slate-400 text-sm py-6">Hafta tanlang</p>
+      )}
+    </div>
+  )
+}
+
 // ─── Monthly numeric score table (other admin_scored directions) ──────────
 
 function MonthlyScoreTable({ direction, maxScore, month }) {
@@ -512,6 +811,9 @@ function MonthlyScoreTable({ direction, maxScore, month }) {
 export function DailyScoreTable({ direction, maxScore, month }) {
   if (direction === '1_ijro') {
     return <IjroCalendarView month={month} />
+  }
+  if (direction === '10_nomenklatura') {
+    return <NomenklaturaWeeklyView month={month} />
   }
   return <MonthlyScoreTable direction={direction} maxScore={maxScore} month={month} />
 }
