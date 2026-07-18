@@ -16,6 +16,10 @@ const request = async (url, options = {}) => {
     ...options,
   })
   if (!res.ok) {
+    // Session muddati o'tgan — App.jsx ni xabardor qil, login sahifasiga o'tsin
+    if (res.status === 401) {
+      window.dispatchEvent(new CustomEvent('auth:expired'))
+    }
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
     throw new Error(err.error || err.detail || `HTTP ${res.status}`)
   }
