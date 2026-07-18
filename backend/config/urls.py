@@ -10,7 +10,9 @@ FRONTEND_DIST = getattr(settings, 'FRONTEND_DIST', None)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('src.api.main_urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Media fayllarni production da ham serve qilish (DEBUG=False da static() ishlamaydi)
+    re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': settings.MEDIA_ROOT}),
+]
 
 if FRONTEND_DIST and FRONTEND_DIST.exists():
     urlpatterns += [
