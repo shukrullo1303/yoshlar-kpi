@@ -169,15 +169,15 @@ function UmumiyReyting({ rows, DIRECTIONS }) {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-h-[70vh]">
         <table className="w-full text-sm border-collapse min-w-max">
-          <thead>
+          <thead className="sticky top-0 z-30">
             <tr className="bg-slate-800 text-white text-xs">
-              <th className="sticky left-0 z-20 bg-slate-800 px-3 py-3 text-center w-10">#</th>
-              <th className="sticky left-10 z-20 bg-slate-800 px-4 py-3 text-left min-w-44">MFY nomi</th>
+              <th className="sticky left-0 z-40 bg-slate-800 px-3 py-3 text-center w-10">#</th>
+              <th className="sticky left-10 z-40 bg-slate-800 px-4 py-3 text-left min-w-44">MFY nomi</th>
               {DIRECTIONS.map(d => (
-                <th key={d.key} className="px-2 py-3 text-center font-medium">
-                  <div className="font-semibold">{d.short}</div>
+                <th key={d.key} className="px-2 py-3 text-center font-medium min-w-28">
+                  <div className="font-semibold text-[10px] leading-tight">{d.label}</div>
                   <div className="text-slate-400 text-[10px] font-normal mt-0.5">max {d.max}</div>
                 </th>
               ))}
@@ -188,8 +188,8 @@ function UmumiyReyting({ rows, DIRECTIONS }) {
               <th className="px-2 py-3 text-center w-10">PDF</th>
             </tr>
             <tr className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-[10px] border-b border-slate-200 dark:border-slate-600">
-              <td className="sticky left-0 bg-slate-100 dark:bg-slate-700 z-20 px-3 py-1.5" />
-              <td className="sticky left-10 bg-slate-100 dark:bg-slate-700 z-20 px-4 py-1.5 font-semibold text-slate-600 dark:text-slate-300 text-xs">Maksimal ball →</td>
+              <td className="sticky left-0 bg-slate-100 dark:bg-slate-700 z-40 px-3 py-1.5" />
+              <td className="sticky left-10 bg-slate-100 dark:bg-slate-700 z-40 px-4 py-1.5 font-semibold text-slate-600 dark:text-slate-300 text-xs">Maksimal ball →</td>
               {DIRECTIONS.map(d => (
                 <td key={d.key} className="px-2 py-1.5 text-center font-bold text-slate-700 dark:text-slate-200">{d.max}</td>
               ))}

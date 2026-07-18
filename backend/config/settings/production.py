@@ -61,8 +61,8 @@ CORS_ALLOW_CREDENTIALS = True
 X_FRAME_OPTIONS             = 'SAMEORIGIN'  # PDF iframe uchun kerak
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-SESSION_COOKIE_SECURE = True   # HTTPS talab qiladi — HTTP'da login ishlamaydi
-CSRF_COOKIE_SECURE    = True
+SESSION_COOKIE_SECURE = False  # Reverse proxy HTTP orqali — True qo'yilsa cookie jo'natilmaydi
+CSRF_COOKIE_SECURE    = False
 CSRF_COOKIE_SAMESITE  = 'Lax'
 CSRF_COOKIE_HTTPONLY  = False
 

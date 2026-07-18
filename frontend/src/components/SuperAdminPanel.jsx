@@ -141,25 +141,29 @@ function UserRow({ profile, idx, onSaved }) {
         />
       </td>
 
-      {/* Saqlash */}
-      <td className="px-2 py-1.5 text-center">
+      {/* Saqlash — sticky right, always visible */}
+      <td className={`sticky right-0 px-2 py-1.5 text-center border-l border-slate-200 dark:border-slate-700 ${
+        idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950'
+      }`}>
         <div className="flex items-center justify-center gap-1.5">
           {error && (
-            <span className="text-xs text-red-500 max-w-24 truncate" title={error}>!</span>
+            <span className="text-xs text-red-500" title={error}>!</span>
           )}
           {saved && !isDirty && (
             <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
           )}
-          {isDirty && (
-            <button
-              onClick={save} disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap">
-              {saving
-                ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                : <Save className="w-3 h-3" />}
-              Saqlash
-            </button>
-          )}
+          <button
+            onClick={save} disabled={saving || !isDirty}
+            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+              isDirty
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-default'
+            }`}>
+            {saving
+              ? <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+              : <Save className="w-3 h-3" />}
+            Saqlash
+          </button>
         </div>
       </td>
     </tr>
@@ -241,7 +245,7 @@ export function SAUserList() {
                 <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 min-w-28">Familya</th>
                 <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 min-w-36">Mahalla</th>
                 <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-12">Faol</th>
-                <th className="px-2 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-24"></th>
+                <th className="sticky right-0 bg-slate-100 dark:bg-slate-800 px-2 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-24 border-l border-slate-200 dark:border-slate-700"></th>
               </tr>
             </thead>
             <tbody>
