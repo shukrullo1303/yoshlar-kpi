@@ -338,11 +338,6 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
                 ✓{totalApproved}
               </span>
             )}
-            {totalRejected > 0 && (
-              <span className="text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline" title="Rad etilgan">
-                ✗{totalRejected}
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">

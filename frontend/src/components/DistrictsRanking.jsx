@@ -169,7 +169,7 @@ function UmumiyReyting({ rows, DIRECTIONS }) {
         </button>
       </div>
 
-      <div className="overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-h-[70vh]">
+      <div className="overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-h-[calc(100vh-12rem)]">
         <table className="w-full text-sm border-collapse min-w-max">
           <thead className="sticky top-0 z-30">
             <tr className="bg-slate-800 text-white text-xs">
@@ -252,22 +252,22 @@ function YonalishReyting({ rows, DIRECTIONS }) {
   const fullCount = rows.filter(r => r.scores[selIdx] >= dir.max).length
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Yo'nalish tugmalari */}
-      <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+      <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Yo'nalish tanlang</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {DIRECTIONS.map((d, i) => (
             <button
               key={d.key}
               onClick={() => setSelIdx(i)}
-              className={`px-3 py-2.5 rounded-lg text-xs font-semibold transition-all text-left ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all text-left leading-snug ${
                 selIdx === i
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:border-blue-300 hover:text-blue-600'
               }`}
             >
-              <div>{d.short}</div>
+              <div className="line-clamp-2">{d.label}</div>
               <div className={`text-[10px] mt-0.5 ${selIdx === i ? 'text-blue-200' : 'text-slate-400'}`}>max: {d.max}</div>
             </button>
           ))}
@@ -275,35 +275,36 @@ function YonalishReyting({ rows, DIRECTIONS }) {
       </div>
 
       {/* Statistika */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm col-span-2 sm:col-span-1">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm col-span-2 sm:col-span-1">
           <p className="text-xs text-slate-500 dark:text-slate-400">Tanlangan yo'nalish</p>
-          <p className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1 leading-tight">{dir.label}</p>
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-1 leading-tight">{dir.label}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm">
           <p className="text-xs text-slate-500 dark:text-slate-400">O'rtacha ball</p>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{(totalScore / rows.length).toFixed(1)}</p>
+          <p className="text-xl font-bold text-blue-600 mt-1">{(totalScore / rows.length).toFixed(1)}</p>
           <p className="text-xs text-slate-400">/ {dir.max}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm">
           <p className="text-xs text-slate-500 dark:text-slate-400">Bajarilish</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{pct(totalScore, dir.max * rows.length)}%</p>
+          <p className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">{pct(totalScore, dir.max * rows.length)}%</p>
           <p className="text-xs text-slate-400">{totalScore} / {dir.max * rows.length}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm">
           <p className="text-xs text-slate-500 dark:text-slate-400">To'liq bajardi</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{fullCount}</p>
+          <p className="text-xl font-bold text-emerald-600 mt-1">{fullCount}</p>
           <p className="text-xs text-slate-400">/ {rows.length} ta MFY</p>
         </div>
       </div>
 
-      {/* Reyting ro'yxati */}
+      {/* Reyting ro'yxati — header sticky, list scrollable */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800 dark:text-slate-100">{dir.label} — Reyting</h3>
+        {/* Sticky direction title */}
+        <div className="sticky top-0 z-20 px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
+          <h3 className="font-bold text-slate-800 dark:text-slate-100">{dir.label} — Reyting</h3>
           <span className="text-xs text-slate-500 dark:text-slate-400">{rows.length} ta MFY</span>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+        <div className="overflow-y-auto max-h-[calc(100vh-32rem)] divide-y divide-slate-100 dark:divide-slate-700">
           {sorted.map((row, idx) => {
             const rank = idx + 1
             const c = rowStyle(rank, sorted.length)
