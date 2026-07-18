@@ -169,14 +169,14 @@ function UmumiyReyting({ rows, DIRECTIONS }) {
         </button>
       </div>
 
-      <div className="overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-h-[calc(100vh-12rem)]">
-        <table className="w-full text-sm border-collapse min-w-max">
+      <div className="overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-h-[calc(100vh-12rem)]">
+        <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-30">
             <tr className="bg-slate-800 text-white text-xs">
               <th className="sticky left-0 z-40 bg-slate-800 px-3 py-3 text-center w-10">#</th>
-              <th className="sticky left-10 z-40 bg-slate-800 px-4 py-3 text-left min-w-44">MFY nomi</th>
+              <th className="sticky left-10 z-40 bg-slate-800 px-4 py-3 text-left w-40">MFY nomi</th>
               {DIRECTIONS.map(d => (
-                <th key={d.key} className="px-2 py-3 text-center font-medium min-w-28">
+                <th key={d.key} className="px-2 py-3 text-center font-medium">
                   <div className="font-semibold text-[10px] leading-tight">{d.label}</div>
                   <div className="text-slate-400 text-[10px] font-normal mt-0.5">max {d.max}</div>
                 </th>
@@ -208,7 +208,7 @@ function UmumiyReyting({ rows, DIRECTIONS }) {
                       {rank}
                     </span>
                   </td>
-                  <td className={`sticky left-10 z-10 px-4 py-2.5 font-semibold text-slate-800 dark:text-slate-100 whitespace-nowrap ${c.row}`}>
+                  <td className={`sticky left-10 z-10 px-4 py-2.5 font-semibold text-slate-800 dark:text-slate-100 ${c.row}`}>
                     {row.name} MFY
                     {row.full_name && (
                       <span className="block text-xs text-slate-400 font-normal">{row.full_name}</span>

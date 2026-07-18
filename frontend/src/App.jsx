@@ -32,6 +32,12 @@ export default function App() {
       .finally(() => setAuthLoading(false))
   }, [])
 
+  useEffect(() => {
+    const handleExpired = () => setUser(null)
+    window.addEventListener('auth:expired', handleExpired)
+    return () => window.removeEventListener('auth:expired', handleExpired)
+  }, [])
+
   const handleLogout = async () => {
     try { await api.logout() } catch (_) {}
     setUser(null)
