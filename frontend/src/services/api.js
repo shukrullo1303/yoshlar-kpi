@@ -116,10 +116,15 @@ export const api = {
     return request(`/user/rejected-tasks/${qs ? `?${qs}` : ''}`)
   },
 
-  // Superadmin
+  // Superadmin — users
   saGetUsers: () => request('/superadmin/users/'),
   saCreateUser: (data) => request('/superadmin/users/', { method: 'POST', body: JSON.stringify(data) }),
   saUpdateUser: (pk, data) => request(`/superadmin/users/${pk}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  // Superadmin — scores
   saGetScores: (month) => request(`/superadmin/scores/${month ? `?month=${month}` : ''}`),
   saSetScore: (data) => request('/superadmin/scores/', { method: 'POST', body: JSON.stringify(data) }),
+  // Superadmin — directions
+  saGetDirections: () => request('/superadmin/directions/'),
+  saCreateDirection: (data) => request('/superadmin/directions/', { method: 'POST', body: JSON.stringify(data) }),
+  saUpdateDirection: (pk, data) => request(`/superadmin/directions/${pk}/`, { method: 'PATCH', body: JSON.stringify(data) }),
 }

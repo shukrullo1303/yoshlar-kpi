@@ -7,7 +7,7 @@ import { DailyScoreTable } from './DailyScoreTable'
 import { TaskSlider } from './TaskSlider'
 import { MonthPlanBar } from './MonthPlanBar'
 import { MFYStatusPanel } from './MFYStatusPanel'
-import { SAUserList, SACreateUser, SAScores } from './SuperAdminPanel'
+import { SAUserList, SACreateUser, SAScores, SADirections } from './SuperAdminPanel'
 
 const NAV_UMUMIY    = '__umumiy__'
 const NAV_YONALISH  = '__yonalish__'
@@ -15,15 +15,18 @@ const NAV_REJA      = '__reja__'
 const NAV_SA_USERS  = '__sa_users__'
 const NAV_SA_CREATE = '__sa_create__'
 const NAV_SA_SCORES = '__sa_scores__'
+const NAV_SA_DIRS   = '__sa_dirs__'
 
 // URL segment  ↔  internal nav key
 const URL_TO_NAV = {
   reja: NAV_REJA, reyting: NAV_UMUMIY, yonalish: NAV_YONALISH,
   'sa-users': NAV_SA_USERS, 'sa-create': NAV_SA_CREATE, 'sa-scores': NAV_SA_SCORES,
+  'sa-dirs': NAV_SA_DIRS,
 }
 const NAV_TO_URL = {
   [NAV_REJA]: 'reja', [NAV_UMUMIY]: 'reyting', [NAV_YONALISH]: 'yonalish',
   [NAV_SA_USERS]: 'sa-users', [NAV_SA_CREATE]: 'sa-create', [NAV_SA_SCORES]: 'sa-scores',
+  [NAV_SA_DIRS]: 'sa-dirs',
 }
 
 function toMonthParam(val) {
@@ -119,6 +122,7 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
     if (nav === NAV_SA_USERS)  return <SAUserList />
     if (nav === NAV_SA_CREATE) return <SACreateUser />
     if (nav === NAV_SA_SCORES) return <SAScores directions={directionsProp} />
+    if (nav === NAV_SA_DIRS)   return <SADirections />
 
     // Ranking views
     if (nav === NAV_UMUMIY || nav === NAV_YONALISH) {
@@ -309,6 +313,12 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
                 nav === NAV_SA_SCORES ? 'bg-amber-500 text-white' : 'text-slate-300 hover:bg-slate-800'
               }`}>
               <Sliders className="w-4 h-4 flex-shrink-0" /> Ball o'zgartirish
+            </button>
+            <button onClick={() => handleNav(NAV_SA_DIRS)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                nav === NAV_SA_DIRS ? 'bg-amber-500 text-white' : 'text-slate-300 hover:bg-slate-800'
+              }`}>
+              <LayoutGrid className="w-4 h-4 flex-shrink-0" /> Yo'nalishlar
             </button>
           </nav>
         </div>

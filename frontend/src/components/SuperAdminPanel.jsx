@@ -454,6 +454,239 @@ export function SAScores({ directions }) {
   )
 }
 
+// ─── Direction row (inline edit) ─────────────────────────────────────────────
+function DirRow({ dir, idx, onSaved }) {
+  const [saving, setSaving]   = useState(false)
+  const [saved, setSaved]     = useState(false)
+  const [error, setError]     = useState('')
+  const [form, setForm]       = useState({
+    label:          dir.label,
+    max_score:      String(dir.max_score),
+    order:          String(dir.order),
+    admin_scored:   dir.admin_scored,
+    is_uploadable:  dir.is_uploadable,
+    is_active:      dir.is_active,
+    default_target: String(dir.default_target),
+  })
+
+  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); setError('') }
+
+  const isDirty =
+    form.label          !== dir.label ||
+    form.max_score      !== String(dir.max_score) ||
+    form.order          !== String(dir.order) ||
+    form.admin_scored   !== dir.admin_scored ||
+    form.is_uploadable  !== dir.is_uploadable ||
+    form.is_active      !== dir.is_active ||
+    form.default_target !== String(dir.default_target)
+
+  const save = async () => {
+    setSaving(true); setError(''); setSaved(false)
+    try {
+      await api.saUpdateDirection(dir.id, {
+        label:          form.label.trim(),
+        max_score:      parseInt(form.max_score),
+        order:          parseInt(form.order),
+        admin_scored:   form.admin_scored,
+        is_uploadable:  form.is_uploadable,
+        is_active:      form.is_active,
+        default_target: parseInt(form.default_target) || 0,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+      onSaved()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <tr className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950'}>
+      <td className="px-2 py-1.5 text-center text-xs text-slate-400 font-mono w-8">{dir.order}</td>
+      <td className="px-2 py-1.5 text-xs font-mono text-slate-500 dark:text-slate-400 w-24">{dir.key}</td>
+      <td className="px-2 py-1.5 min-w-48">
+        <input type="text" value={form.label} onChange={e => set('label', e.target.value)}
+          className="input-field w-full text-xs" />
+      </td>
+      <td className="px-2 py-1.5 w-20">
+        <input type="number" min="1" value={form.max_score} onChange={e => set('max_score', e.target.value)}
+          className="input-field w-full text-xs text-center" />
+      </td>
+      <td className="px-2 py-1.5 w-16">
+        <input type="number" min="0" value={form.order} onChange={e => set('order', e.target.value)}
+          className="input-field w-full text-xs text-center" />
+      </td>
+      <td className="px-2 py-1.5 w-16">
+        <input type="number" min="0" value={form.default_target} onChange={e => set('default_target', e.target.value)}
+          className="input-field w-full text-xs text-center" />
+      </td>
+      <td className="px-2 py-1.5 text-center w-10">
+        <input type="checkbox" checked={form.admin_scored} onChange={e => set('admin_scored', e.target.checked)}
+          className="w-4 h-4 accent-blue-600 cursor-pointer" />
+      </td>
+      <td className="px-2 py-1.5 text-center w-10">
+        <input type="checkbox" checked={form.is_uploadable} onChange={e => set('is_uploadable', e.target.checked)}
+          className="w-4 h-4 accent-blue-600 cursor-pointer" />
+      </td>
+      <td className="px-2 py-1.5 text-center w-10">
+        <input type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)}
+          className="w-4 h-4 accent-emerald-500 cursor-pointer" />
+      </td>
+      <td className={`sticky right-0 px-2 py-1.5 text-center border-l border-slate-200 dark:border-slate-700 ${
+        idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950'
+      }`}>
+        <div className="flex items-center justify-center gap-1.5">
+          {error && <span className="text-xs text-red-500" title={error}>!</span>}
+          {saved && !isDirty && <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
+          <button onClick={save} disabled={saving || !isDirty}
+            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+              isDirty ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-default'
+            }`}>
+            {saving ? <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" /> : <Save className="w-3 h-3" />}
+            Saqlash
+          </button>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+// ─── Direction Management ─────────────────────────────────────────────────────
+export function SADirections() {
+  const [dirs, setDirs]       = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating]     = useState(false)
+  const [createErr, setCreateErr]   = useState('')
+  const [createOk, setCreateOk]     = useState('')
+  const BLANK = { key: '', label: '', max_score: '10', order: '0', admin_scored: false, is_uploadable: true, is_active: true, default_target: '0' }
+  const [form, setForm] = useState(BLANK)
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const load = useCallback(() => {
+    setLoading(true)
+    api.saGetDirections().then(setDirs).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const create = async () => {
+    setCreating(true); setCreateErr(''); setCreateOk('')
+    try {
+      await api.saCreateDirection({
+        ...form,
+        max_score:      parseInt(form.max_score),
+        order:          parseInt(form.order),
+        default_target: parseInt(form.default_target) || 0,
+      })
+      setCreateOk(`"${form.key}" yo'nalish qo'shildi!`)
+      setForm(BLANK)
+      setShowCreate(false)
+      load()
+    } catch (e) {
+      setCreateErr(e.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          Yo'nalishlar
+          <span className="ml-2 text-sm font-normal text-slate-500">({dirs.length} ta)</span>
+        </h2>
+        <div className="flex items-center gap-2">
+          <button onClick={() => { setShowCreate(s => !s); setCreateErr(''); setCreateOk('') }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+            <Plus className="w-4 h-4" /> Yangi yo'nalish
+          </button>
+          <button onClick={load}
+            className="p-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <FormField label="Key * (masalan: 11_yangi)" value={form.key} onChange={v => setF('key', v)} placeholder="11_yangi" />
+          <FormField label="Nomi *" value={form.label} onChange={v => setF('label', v)} placeholder="Yo'nalish nomi" />
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Max ball *</label>
+            <input type="number" min="1" value={form.max_score} onChange={e => setF('max_score', e.target.value)} className="w-full input-field" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tartib raqami</label>
+            <input type="number" min="0" value={form.order} onChange={e => setF('order', e.target.value)} className="w-full input-field" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Default reja soni (0 = yo'q)</label>
+            <input type="number" min="0" value={form.default_target} onChange={e => setF('default_target', e.target.value)} className="w-full input-field" />
+          </div>
+          <div className="flex flex-col gap-2 justify-end">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+              <input type="checkbox" checked={form.admin_scored} onChange={e => setF('admin_scored', e.target.checked)} className="w-4 h-4 accent-blue-600" />
+              Admin baholaydi
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300">
+              <input type="checkbox" checked={form.is_uploadable} onChange={e => setF('is_uploadable', e.target.checked)} className="w-4 h-4 accent-blue-600" />
+              Fayl yuklash mumkin
+            </label>
+          </div>
+          <div className="sm:col-span-3 flex items-center justify-end gap-3 flex-wrap pt-1 border-t border-slate-200 dark:border-slate-700">
+            {createErr && <span className="text-xs text-red-500 mr-auto">{createErr}</span>}
+            {createOk  && <span className="text-xs text-emerald-600 dark:text-emerald-400 mr-auto">{createOk}</span>}
+            <button onClick={() => setShowCreate(false)}
+              className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white">
+              Bekor
+            </button>
+            <button onClick={create} disabled={creating || !form.key || !form.label || !form.max_score}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
+              {creating ? <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin" /> : <Plus className="w-4 h-4" />}
+              Qo'shish
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="py-12 flex justify-center">
+          <div className="w-7 h-7 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-100 dark:bg-slate-800 text-left">
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-500 w-8">Tartib</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-24">Key</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 min-w-48">Nomi</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-20 text-center">Max ball</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-16 text-center">Order</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-16 text-center">Reja def.</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-10 text-center" title="Admin baholaydi">Admin</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-10 text-center" title="Fayl yuklash mumkin">Fayl</th>
+                <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 w-10 text-center">Faol</th>
+                <th className="sticky right-0 bg-slate-100 dark:bg-slate-800 px-2 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-24 border-l border-slate-200 dark:border-slate-700"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {dirs.map((d, i) => (
+                <DirRow key={d.id} dir={d} idx={i} onSaved={load} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Shared ───────────────────────────────────────────────────────────────────
 function FormField({ label, value, onChange, placeholder }) {
   return (

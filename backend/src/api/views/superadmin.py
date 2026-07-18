@@ -92,6 +92,93 @@ class SuperAdminUserDetailView(APIView):
         return Response({'ok': True})
 
 
+class SuperAdminDirectionView(APIView):
+    """Superadmin — yo'nalishlarni ko'rish, qo'shish, tahrirlash."""
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        dirs = KPIDirection.objects.all().order_by('order')
+        return Response([{
+            'id': d.id,
+            'key': d.key,
+            'label': d.label,
+            'max_score': d.max_score,
+            'order': d.order,
+            'admin_scored': d.admin_scored,
+            'is_uploadable': d.is_uploadable,
+            'is_active': d.is_active,
+            'default_target': d.default_target,
+            'info': d.info,
+            'how': d.how,
+        } for d in dirs])
+
+    def post(self, request):
+        key   = request.data.get('key', '').strip()
+        label = request.data.get('label', '').strip()
+        try:
+            max_score = int(request.data.get('max_score', 0))
+        except (TypeError, ValueError):
+            return Response({'error': 'max_score musbat son bo\'lishi kerak'}, status=400)
+
+        if not key or not label or max_score < 1:
+            return Response({'error': 'key, label va max_score (≥1) majburiy'}, status=400)
+        if KPIDirection.objects.filter(key=key).exists():
+            return Response({'error': 'Bu key allaqachon mavjud'}, status=400)
+
+        order         = int(request.data.get('order', 0))
+        admin_scored  = bool(request.data.get('admin_scored', False))
+        is_uploadable = bool(request.data.get('is_uploadable', True))
+        is_active     = bool(request.data.get('is_active', True))
+        default_target = int(request.data.get('default_target', 0))
+        info = request.data.get('info', '')
+        how  = request.data.get('how', '')
+
+        d = KPIDirection.objects.create(
+            key=key, label=label, max_score=max_score, order=order,
+            admin_scored=admin_scored, is_uploadable=is_uploadable,
+            is_active=is_active, default_target=default_target,
+            info=info, how=how,
+        )
+        return Response({'id': d.id, 'key': d.key}, status=201)
+
+
+class SuperAdminDirectionDetailView(APIView):
+    """Superadmin — bitta yo'nalishni tahrirlash."""
+    permission_classes = [IsSuperAdmin]
+
+    def patch(self, request, pk):
+        try:
+            d = KPIDirection.objects.get(pk=pk)
+        except KPIDirection.DoesNotExist:
+            return Response({'error': 'Topilmadi'}, status=404)
+
+        data = request.data
+        if 'label' in data:
+            d.label = data['label'].strip()
+        if 'max_score' in data:
+            try:
+                d.max_score = int(data['max_score'])
+            except (TypeError, ValueError):
+                return Response({'error': 'max_score son bo\'lishi kerak'}, status=400)
+        if 'order' in data:
+            d.order = int(data['order'])
+        if 'admin_scored' in data:
+            d.admin_scored = bool(data['admin_scored'])
+        if 'is_uploadable' in data:
+            d.is_uploadable = bool(data['is_uploadable'])
+        if 'is_active' in data:
+            d.is_active = bool(data['is_active'])
+        if 'default_target' in data:
+            d.default_target = int(data['default_target'])
+        if 'info' in data:
+            d.info = data['info']
+        if 'how' in data:
+            d.how = data['how']
+
+        d.save()
+        return Response({'ok': True})
+
+
 class SuperAdminScoreView(APIView):
     """Superadmin — foydalanuvchi ballarini ko'rish va o'zgartirish."""
     permission_classes = [IsSuperAdmin]
