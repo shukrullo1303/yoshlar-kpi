@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Loader2, FileText, Download, Target } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Loader2, FileText, Download, Target, ChevronsRight } from 'lucide-react'
 import { api } from '../services/api'
 
 function isImage(url) {
@@ -10,12 +10,13 @@ function isPdf(url) {
   return /\.pdf(\?|$)/i.test(url)
 }
 
-// Convert absolute localhost URL to relative so Vite proxy handles it (fixes SAMEORIGIN iframe block)
+// Convert any absolute URL to relative path — fixes mixed-content block on HTTPS production
+// and SAMEORIGIN iframe block on local dev (Vite proxy at same origin handles /media/)
 function toRelative(url) {
   if (!url) return url
   try {
     const u = new URL(url)
-    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return u.pathname + u.search
+    return u.pathname + u.search
   } catch (_) {}
   return url
 }
@@ -197,6 +198,24 @@ export function TaskSlider({ direction, maxScore, month }) {
     }
   }
 
+  const handleBulkApprove = async () => {
+    if (!tasks.length || taskStatus !== 'sariq') return
+    if (!window.confirm(`${tasks.length} ta topshiriqni tasdiqlaysizmi?`)) return
+    setBusy(true)
+    setActionError(null)
+    try {
+      const ids = tasks.map(t => t.id)
+      const finalScore = planScore !== null ? planScore : null
+      await api.bulkReviewTasks(ids, 'tasdiqlash', finalScore)
+      await loadCounts()
+      await loadTasks(taskStatus)
+    } catch (e) {
+      setActionError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const handleReject = async () => {
     if (!rejectComment.trim()) return
     const task = tasks[idx]
@@ -223,7 +242,7 @@ export function TaskSlider({ direction, maxScore, month }) {
   return (
     <div className="space-y-5">
       {/* Status tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-4">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-4 flex-wrap">
         {STATUS_TABS.map(tab => (
           <button key={tab.key} onClick={() => setTaskStatus(tab.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -237,6 +256,17 @@ export function TaskSlider({ direction, maxScore, month }) {
             }`}>{counts[tab.key]}</span>
           </button>
         ))}
+        {taskStatus === 'sariq' && tasks.length > 1 && (
+          <button
+            onClick={handleBulkApprove}
+            disabled={busy}
+            className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 transition-all shadow-sm"
+            title="Barcha kutilayotgan topshiriqlarni tasdiqlash"
+          >
+            <ChevronsRight className="w-4 h-4" />
+            Hammasini tasdiqlash ({tasks.length})
+          </button>
+        )}
       </div>
 
 

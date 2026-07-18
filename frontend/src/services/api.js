@@ -115,4 +115,11 @@ export const api = {
     const qs = params.toString()
     return request(`/user/rejected-tasks/${qs ? `?${qs}` : ''}`)
   },
+
+  // Superadmin
+  saGetUsers: () => request('/superadmin/users/'),
+  saCreateUser: (data) => request('/superadmin/users/', { method: 'POST', body: JSON.stringify(data) }),
+  saUpdateUser: (pk, data) => request(`/superadmin/users/${pk}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  saGetScores: (month) => request(`/superadmin/scores/${month ? `?month=${month}` : ''}`),
+  saSetScore: (data) => request('/superadmin/scores/', { method: 'POST', body: JSON.stringify(data) }),
 }

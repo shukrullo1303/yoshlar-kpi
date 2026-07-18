@@ -35,7 +35,10 @@ npm run lint     # oxlint
 ### Seed initial data
 
 ```powershell
-python manage.py seed_data   # creates 76 Profile records from MFY nomlari.xlsx
+python manage.py seed_data        # creates 76 Profile records from MFY nomlari.xlsx
+python manage.py seed_directions  # initializes 10 KPIDirection records
+# or use fixtures:
+python manage.py loaddata src/core/fixtures/initial_data.json
 ```
 
 ## Architecture
@@ -47,12 +50,17 @@ python manage.py seed_data   # creates 76 Profile records from MFY nomlari.xlsx
 ```
 config/settings/base.py        ← shared: TIME_ZONE=Asia/Tashkent, CORS, REST_FRAMEWORK
 config/settings/local.py       ← BASE_DIR fix, FRONTEND_DIST, debug_toolbar, MEDIA_ROOT, TEMPLATES DIRS
-config/settings/production.py  ← inherits local.py, DEBUG=False
+config/settings/production.py  ← inherits base.py (NOT local.py), DEBUG=False, MySQL DB, file logging
 ```
 
 `local.py` also sets `FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'` and adds it to `TEMPLATES[0]['DIRS']`, enabling Django to serve `index.html`. `X_FRAME_OPTIONS = 'SAMEORIGIN'` is set here to allow PDF iframes.
 
-`pa_wsgi.py` in `backend/` is the PythonAnywhere deployment entry point.
+**WSGI entry points:**
+- `pa_wsgi.py` — PythonAnywhere
+- `passenger_wsgi.py` — Passenger/cPanel hosting (uses `config.settings.production`)
+- `config/wsgi.py` — standard Django WSGI
+
+**Authentication:** `src/core/authentication.py` defines `CsrfExemptSessionAuthentication` (subclasses DRF's `SessionAuthentication` to skip CSRF enforcement). Set as the default authentication class in `REST_FRAMEWORK` settings.
 
 ### Django serving React
 
@@ -126,7 +134,11 @@ All under `/api/`. Auth endpoints are open; `/api/admin/*` requires `IsAdminUser
 | POST | `/api/admin/bulk-review/` | `{task_ids, action, score?, admin_comment?}` |
 | GET | `/api/user/dashboard/?month=` | Authenticated user's scores per direction |
 | POST | `/api/user/submit/` | `multipart/form-data` — direction, month, files, optional fields |
+| GET | `/api/user/rejected/?direction=&month=` | Authenticated user's rejected tasks |
 | POST | `/api/user/profile/` | Update name/password: `{first_name, last_name, old_password, new_password}` |
+| GET | `/api/health/` | Health check (open) |
+| GET | `/api/docs/swagger/` | Swagger UI (drf-yasg) |
+| GET | `/api/docs/redoc/` | ReDoc API docs |
 
 `review` actions: `"tasdiqlash"` (score optional — auto-calculated if plan exists) or `"rad_etish"` (requires `admin_comment`). Task must be `sariq`.
 
@@ -138,7 +150,7 @@ All extend `BaseSerializer` which formats `created_at`/`updated_at` as `"YYYY-MM
 
 ### Frontend (`frontend/src/`)
 
-React 19 + Vite 8 + Tailwind CSS 4 + lucide-react + jsPDF + html2canvas.
+React 19 + Vite 8 + Tailwind CSS 4 (via `@tailwindcss/vite` plugin) + lucide-react + jsPDF.
 
 All API calls go through `src/services/api.js` — a single module that handles CSRF token injection and error normalization. `submitTask` uses raw `fetch` (not the shared `request` helper) because it sends `FormData`, not JSON.
 
@@ -148,7 +160,7 @@ All API calls go through `src/services/api.js` — a single module that handles 
 
 **Auth flow:** `App.jsx` calls `GET /api/auth/me/` on load. If authenticated, fetches `GET /api/directions/` then renders `AdminPanel` (staff/superuser) or `UserDashboard` (regular user). `directions` prop is passed down to both.
 
-**Vite proxy:** `/api/*` → `http://localhost:8000` (defined in `vite.config.js`). All `api.js` calls use relative `/api/...` URLs.
+**Vite proxy:** `/api/*` and `/media/*` → `http://localhost:8000` (defined in `vite.config.js`). All `api.js` calls use relative `/api/...` URLs.
 
 **Two user roles:**
 - **Admin/Staff** → `AdminPanel`: sidebar with direction buttons + reja/reyting links; main area shows `TaskSlider` (file review) or `DailyScoreTable` (bulk scoring) depending on `direction.admin_scored`. Also has `MFYStatusPanel` sub-tab for per-mahalla grid view.
@@ -160,7 +172,7 @@ All API calls go through `src/services/api.js` — a single module that handles 
 - `AdminPanel` — `admin_scored` flag on direction drives whether to show `DailyScoreTable` vs `TaskSlider`. `10_nomenklatura` is locked until the 25th of the selected month.
 - `DailyScoreTable` — for `1_ijro`: calendar UI with attendance toggle per mahalla per workday. For other `admin_scored` directions: numeric score input per mahalla per date.
 - `TaskSlider` — card-based review UI with status tabs (sariq/yashil/qizil); approve sets score (auto-calculated if plan exists), reject requires comment. Used for all non-`admin_scored` directions including `7_brend`.
-- `DistrictsRanking` — fetches from `/api/admin/districts/`; PDF export per mahalla row (jsPDF + html2canvas); two tabs: umumiy (full table) and yo'nalish (per-direction ranked list).
+- `DistrictsRanking` — fetches from `/api/admin/districts/`; PDF export per mahalla row (jsPDF); two tabs: umumiy (full table) and yo'nalish (per-direction ranked list).
 - `MonthPlanBar` — table UI for admin to set monthly `target_count` per direction; `ball/topshiriq` auto-calculated.
 - `MFYStatusPanel` — grid showing per-mahalla completion status for a selected direction; uses `/api/admin/mfy-status/`.
 - `UserDashboard` — `DirectionCard` is clickable only when `dir.is_uploadable && DIR_FIELDS[dir.key]` both true; opens inline `UploadModal`. `DIR_FIELDS` in `UserDashboard.jsx` maps direction keys to extra form fields — directions absent from this map (`1_ijro`, `10_nomenklatura`) cannot be user-submitted.

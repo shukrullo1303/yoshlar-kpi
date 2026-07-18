@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Download } from 'lucide-react'
-import jsPDF from 'jspdf'
+import { Download, FileDown } from 'lucide-react'
 import { api } from '../services/api'
 
-const DIRECTIONS = [
+// Short labels keyed by direction key — used when deriving from API directions
+const SHORT_LABELS = {
+  '1_ijro': 'Ijro', '2_balans': 'Balans', '3_bandlik': 'Bandlik',
+  '4_bosh_vaqt': "Bo'sh Vaqt", '5_profilaktika': 'Profilak.',
+  '6_murojaat': 'Murojaat', '7_brend': 'Brend', '8_talim': "Ta'lim",
+  '9_startap': 'Startap', '10_nomenklatura': 'Nomen.',
+}
+
+// Fallback hardcoded list (used if directions prop not provided)
+const FALLBACK_DIRECTIONS = [
   { key: '1_ijro',          short: 'Ijro',        label: 'Ijro Intizomi',            max: 20 },
   { key: '2_balans',        short: 'Balans',       label: 'Yoshlar Balansi',          max: 5  },
   { key: '3_bandlik',       short: 'Bandlik',      label: 'Yoshlar Bandligi',         max: 15 },
@@ -16,7 +24,7 @@ const DIRECTIONS = [
   { key: '10_nomenklatura', short: 'Nomen.',       label: 'Nomenklatura Hujjatlar',   max: 10 },
 ]
 
-const MAX_TOTAL = DIRECTIONS.reduce((s, d) => s + d.max, 0)
+// MAX_TOTAL computed per render from active DIRECTIONS (see component)
 
 function pct(score, max) {
   return max ? Math.round((score / max) * 100) : 0
@@ -34,7 +42,9 @@ function ScoreCell({ score, max }) {
   return <span className={cls}>{score > 0 ? score : <span className="text-slate-300 dark:text-slate-600">—</span>}</span>
 }
 
-function generatePDF(row, allRows) {
+async function generatePDF(row, allRows, DIRECTIONS) {
+  const { default: jsPDF } = await import('jspdf')
+  const MAX_TOTAL = DIRECTIONS.reduce((s, d) => s + d.max, 0)
   const doc = new jsPDF()
   doc.setFontSize(16)
   doc.text(`${row.name} MFY — KPI Reytingi`, 14, 18)
@@ -53,17 +63,110 @@ function generatePDF(row, allRows) {
   doc.save(`${row.name}-reyting.pdf`)
 }
 
+async function generateFullPDF(rows, DIRECTIONS) {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+  const MAX_TOTAL = DIRECTIONS.reduce((s, d) => s + d.max, 0)
+  const doc = new jsPDF({ orientation: 'landscape', format: 'a4' })
+  const dateStr = new Date().toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  doc.setFontSize(13)
+  doc.text("Asaka tumani yoshlar yetakchilari — Umumiy KPI Reytingi", 14, 12)
+  doc.setFontSize(8)
+  doc.setTextColor(100)
+  doc.text(dateStr, 14, 19)
+  doc.setTextColor(0)
+
+  const head = [['#', "MFY nomi", ...DIRECTIONS.map(d => `${d.short}\n/${d.max}`), `Jami\n/${MAX_TOTAL}`]]
+  const body = rows.map((row, idx) => [
+    idx + 1,
+    row.name + (row.full_name ? `\n${row.full_name}` : ''),
+    ...row.scores,
+    row.total,
+  ])
+
+  autoTable(doc, {
+    head,
+    body,
+    startY: 23,
+    margin: { left: 7, right: 7 },
+    styles: { fontSize: 7, cellPadding: 1.8, halign: 'center', valign: 'middle', lineColor: [226, 232, 240], lineWidth: 0.2 },
+    columnStyles: {
+      0:  { cellWidth: 8 },
+      1:  { cellWidth: 40, halign: 'left' },
+      12: { cellWidth: 18, fontStyle: 'bold' },
+    },
+    headStyles: {
+      fillColor: [30, 41, 59],
+      textColor: [255, 255, 255],
+      fontSize: 7,
+      fontStyle: 'bold',
+      cellPadding: 2,
+    },
+    didParseCell: (data) => {
+      if (data.section !== 'body') return
+      const rank = data.row.index + 1
+      const total = rows.length
+
+      if (rank <= 3)           data.cell.styles.fillColor = [209, 250, 229]
+      else if (rank > total - 3) data.cell.styles.fillColor = [254, 226, 226]
+      else                     data.cell.styles.fillColor = [254, 243, 199]
+
+      const col = data.column.index
+      if (col >= 2 && col <= 11) {
+        const score = Number(data.cell.raw)
+        const max = DIRECTIONS[col - 2].max
+        if (max > 0 && score > 0) {
+          const p = (score / max) * 100
+          if (p >= 80)      data.cell.styles.textColor = [5, 150, 105]
+          else if (p >= 50) data.cell.styles.textColor = [180, 83, 9]
+          else              data.cell.styles.textColor = [220, 38, 38]
+        }
+      }
+
+      if (col === 12) {
+        data.cell.styles.fontStyle = 'bold'
+        data.cell.styles.fontSize = 8.5
+        const p = pct(Number(data.cell.raw), MAX_TOTAL)
+        if (p >= 80)      data.cell.styles.textColor = [5, 150, 105]
+        else if (p >= 50) data.cell.styles.textColor = [180, 83, 9]
+        else              data.cell.styles.textColor = [220, 38, 38]
+      }
+    },
+  })
+
+  // Legend
+  const finalY = (doc.lastAutoTable?.finalY ?? 180) + 8
+  doc.setFontSize(7)
+  doc.setFillColor(209, 250, 229); doc.rect(7, finalY, 4, 4, 'F')
+  doc.setTextColor(0); doc.text("Top 3", 13, finalY + 3)
+  doc.setFillColor(254, 243, 199); doc.rect(30, finalY, 4, 4, 'F')
+  doc.text("O'rtacha", 36, finalY + 3)
+  doc.setFillColor(254, 226, 226); doc.rect(60, finalY, 4, 4, 'F')
+  doc.text("Eng past 3", 66, finalY + 3)
+
+  doc.save(`umumiy-reyting-${new Date().toISOString().slice(0, 10)}.pdf`)
+}
+
 // ─── Umumiy reyting: to'liq jadval ──────────────────────────────────────────
-function UmumiyReyting({ rows }) {
+function UmumiyReyting({ rows, DIRECTIONS }) {
+  const MAX_TOTAL = DIRECTIONS.reduce((s, d) => s + d.max, 0)
   if (!rows.length) return <p className="text-slate-400 text-sm py-8 text-center">Ma'lumot yo'q</p>
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-4 text-xs font-medium text-slate-600 dark:text-slate-300 flex-wrap pb-1">
+      <div className="flex gap-4 text-xs font-medium text-slate-600 dark:text-slate-300 flex-wrap pb-1 items-center">
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-400 inline-block" />Top 3 — eng yaxshi</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 inline-block" />O'rtacha</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-400 inline-block" />Eng past 3</span>
-        <span className="flex items-center gap-1.5 ml-auto text-slate-400">Jami max: {MAX_TOTAL} ball</span>
+        <span className="flex items-center gap-1.5 text-slate-400">Jami max: {MAX_TOTAL} ball</span>
+        <button
+          onClick={() => generateFullPDF(rows, DIRECTIONS)}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          Jadval PDF
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -122,7 +225,7 @@ function UmumiyReyting({ rows }) {
                   </td>
                   <td className="px-2 py-2.5 text-center">
                     <button
-                      onClick={() => generatePDF(row, rows)}
+                      onClick={() => generatePDF(row, rows, DIRECTIONS)}
                       className="p-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-500 transition-colors"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -139,7 +242,7 @@ function UmumiyReyting({ rows }) {
 }
 
 // ─── Yo'nalish bo'yicha reyting ──────────────────────────────────────────────
-function YonalishReyting({ rows }) {
+function YonalishReyting({ rows, DIRECTIONS }) {
   const [selIdx, setSelIdx] = useState(0)
   if (!rows.length) return <p className="text-slate-400 text-sm py-8 text-center">Ma'lumot yo'q</p>
 
@@ -236,7 +339,14 @@ function YonalishReyting({ rows }) {
 }
 
 // ─── Asosiy komponent ─────────────────────────────────────────────────────────
-export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, monthTo, hideTabs = false }) {
+export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, monthTo, hideTabs = false, directions: directionsProp = null }) {
+  // Build DIRECTIONS from API prop when available, so max_score stays in sync with DB
+  const DIRECTIONS = directionsProp && directionsProp.length
+    ? directionsProp
+        .filter(d => d.is_active !== false)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        .map(d => ({ key: d.key, short: SHORT_LABELS[d.key] || d.key, label: d.label, max: d.max_score }))
+    : FALLBACK_DIRECTIONS
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -286,9 +396,9 @@ export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, mont
       ) : error ? (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-4 text-sm">{error}</div>
       ) : activeTab === 'umumiy' ? (
-        <UmumiyReyting rows={rows} />
+        <UmumiyReyting rows={rows} DIRECTIONS={DIRECTIONS} />
       ) : (
-        <YonalishReyting rows={rows} />
+        <YonalishReyting rows={rows} DIRECTIONS={DIRECTIONS} />
       )}
     </div>
   )

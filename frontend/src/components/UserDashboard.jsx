@@ -159,7 +159,11 @@ function UploadModal({ dir, month, onClose, onSuccess }) {
   const fileRef = useRef()
 
   const setField = (k, v) => setFields(f => ({ ...f, [k]: v }))
-  const addFiles = (e) => { setFiles(p => [...p, ...Array.from(e.target.files)]); e.target.value = '' }
+  const addFiles = (e) => {
+    const captured = Array.from(e.target.files)  // capture synchronously before clearing input
+    e.target.value = ''
+    if (captured.length) setFiles(p => [...p, ...captured])
+  }
   const removeFile = (i) => setFiles(p => p.filter((_, idx) => idx !== i))
 
   const handleSubmit = async () => {
@@ -296,10 +300,7 @@ function RejectedModal({ direction, directionLabel, month, directions, onClose }
   }
   function toRelative(url) {
     if (!url) return url
-    try {
-      const u = new URL(url)
-      if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return u.pathname + u.search
-    } catch (_) {}
+    try { const u = new URL(url); return u.pathname + u.search } catch (_) {}
     return url
   }
 

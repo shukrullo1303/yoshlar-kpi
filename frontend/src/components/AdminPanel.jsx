@@ -1,38 +1,62 @@
 import { useState, useEffect } from 'react'
-import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Lock } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Lock, Users, UserPlus, Sliders } from 'lucide-react'
 import { api } from '../services/api'
 import { DistrictsRanking } from './DistrictsRanking'
 import { DailyScoreTable } from './DailyScoreTable'
 import { TaskSlider } from './TaskSlider'
 import { MonthPlanBar } from './MonthPlanBar'
 import { MFYStatusPanel } from './MFYStatusPanel'
+import { SAUserList, SACreateUser, SAScores } from './SuperAdminPanel'
 
-const NAV_UMUMIY   = '__umumiy__'
-const NAV_YONALISH = '__yonalish__'
-const NAV_REJA     = '__reja__'
+const NAV_UMUMIY    = '__umumiy__'
+const NAV_YONALISH  = '__yonalish__'
+const NAV_REJA      = '__reja__'
+const NAV_SA_USERS  = '__sa_users__'
+const NAV_SA_CREATE = '__sa_create__'
+const NAV_SA_SCORES = '__sa_scores__'
+
+// URL segment  ↔  internal nav key
+const URL_TO_NAV = {
+  reja: NAV_REJA, reyting: NAV_UMUMIY, yonalish: NAV_YONALISH,
+  'sa-users': NAV_SA_USERS, 'sa-create': NAV_SA_CREATE, 'sa-scores': NAV_SA_SCORES,
+}
+const NAV_TO_URL = {
+  [NAV_REJA]: 'reja', [NAV_UMUMIY]: 'reyting', [NAV_YONALISH]: 'yonalish',
+  [NAV_SA_USERS]: 'sa-users', [NAV_SA_CREATE]: 'sa-create', [NAV_SA_SCORES]: 'sa-scores',
+}
 
 function toMonthParam(val) {
   return val ? `${val}-01` : null
 }
 
 export function AdminPanel({ user, directions: directionsProp = [], onLogout, darkMode, toggleDark }) {
-  const [monthFrom, setMonthFrom]                 = useState('')
-  const [monthTo, setMonthTo]                     = useState('')
+  const { '*': urlPage = '' } = useParams()
+  const navigate = useNavigate()
+
+  const curMonth = new Date().toISOString().slice(0, 7)
+  const [monthFrom, setMonthFrom]                 = useState(curMonth)
+  const [monthTo, setMonthTo]                     = useState(curMonth)
   const [stats, setStats]                         = useState([])
-  const [nav, setNav]                             = useState('')
   const [subView, setSubView]                     = useState('tasks') // 'tasks' | 'plan' | 'mfy'
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [rejaDirection, setRejaDirection]         = useState('')
+
+  // nav is derived from URL — no useState needed
+  const nav = URL_TO_NAV[urlPage] || urlPage || ''
+
+  // When directions load and URL has no page, redirect to first direction
+  useEffect(() => {
+    if (directionsProp.length > 0 && !urlPage) {
+      navigate(`/admin/${directionsProp[0].key}`, { replace: true })
+    }
+  }, [directionsProp, urlPage])
+
+  // Reset subView when page changes
+  useEffect(() => { setSubView('tasks') }, [urlPage])
 
   const activeMonthFrom = toMonthParam(monthFrom)
   const activeMonthTo   = toMonthParam(monthTo)
   const activeMonth     = activeMonthFrom
-
-  useEffect(() => {
-    if (directionsProp.length > 0 && !nav) {
-      setNav(directionsProp[0].key)
-    }
-  }, [directionsProp])
 
   useEffect(() => {
     api.getDashboardStats(activeMonthFrom, activeMonthTo || activeMonthFrom)
@@ -51,16 +75,17 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
     }
   })
 
-  const activeDirection = directions.find(d => d.key === nav)
-  const totalPending    = stats.reduce((s, d) => s + (d.sariq_count ?? 0), 0)
+  const activeDirection  = directions.find(d => d.key === nav)
+  const totalPending     = stats.reduce((s, d) => s + (d.sariq_count  ?? 0), 0)
+  const totalApproved    = stats.reduce((s, d) => s + (d.yashil_count ?? 0), 0)
+  const totalRejected    = stats.reduce((s, d) => s + (d.qizil_count  ?? 0), 0)
 
   const handleNav = (key) => {
-    setNav(key)
-    setSubView('tasks')
+    navigate(`/admin/${NAV_TO_URL[key] || key}`)
     setMobileSidebarOpen(false)
   }
 
-  const clearMonths = () => { setMonthFrom(''); setMonthTo('') }
+  const clearMonths = () => { const m = new Date().toISOString().slice(0, 7); setMonthFrom(m); setMonthTo(m) }
 
   // Sub-tabs rendered for non-admin-scored directions
   function SubTabs({ includeAdminScored = false }) {
@@ -90,6 +115,11 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
   function renderMain() {
     if (!nav) return null
 
+    // Superadmin pages
+    if (nav === NAV_SA_USERS)  return <SAUserList />
+    if (nav === NAV_SA_CREATE) return <SACreateUser />
+    if (nav === NAV_SA_SCORES) return <SAScores directions={directionsProp} />
+
     // Ranking views
     if (nav === NAV_UMUMIY || nav === NAV_YONALISH) {
       return (
@@ -99,6 +129,7 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
             monthFrom={activeMonthFrom}
             monthTo={activeMonthTo || activeMonthFrom}
             hideTabs={true}
+            directions={directionsProp}
           />
         </div>
       )
@@ -256,6 +287,32 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
           </button>
         </nav>
       </div>
+
+      {user?.is_superuser && (
+        <div className="pt-4 border-t border-amber-500/30 dark:border-amber-500/20">
+          <p className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-2 px-2">Superadmin</p>
+          <nav className="space-y-0.5">
+            <button onClick={() => handleNav(NAV_SA_USERS)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                nav === NAV_SA_USERS ? 'bg-amber-500 text-white' : 'text-slate-300 hover:bg-slate-800'
+              }`}>
+              <Users className="w-4 h-4 flex-shrink-0" /> Foydalanuvchilar
+            </button>
+            <button onClick={() => handleNav(NAV_SA_CREATE)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                nav === NAV_SA_CREATE ? 'bg-amber-500 text-white' : 'text-slate-300 hover:bg-slate-800'
+              }`}>
+              <UserPlus className="w-4 h-4 flex-shrink-0" /> Yangi akkaunt
+            </button>
+            <button onClick={() => handleNav(NAV_SA_SCORES)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                nav === NAV_SA_SCORES ? 'bg-amber-500 text-white' : 'text-slate-300 hover:bg-slate-800'
+              }`}>
+              <Sliders className="w-4 h-4 flex-shrink-0" /> Ball o'zgartirish
+            </button>
+          </nav>
+        </div>
+      )}
     </div>
   )
 
@@ -272,8 +329,18 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
             <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">⚙</span>
             <h1 className="text-sm sm:text-base font-bold truncate">Admin Panel</h1>
             {totalPending > 0 && (
-              <span className="text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-xs font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full flex-shrink-0" title="Kutilmoqda">
                 {totalPending}
+              </span>
+            )}
+            {totalApproved > 0 && (
+              <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline" title="Tasdiqlangan">
+                ✓{totalApproved}
+              </span>
+            )}
+            {totalRejected > 0 && (
+              <span className="text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full flex-shrink-0 hidden sm:inline" title="Rad etilgan">
+                ✗{totalRejected}
               </span>
             )}
           </div>

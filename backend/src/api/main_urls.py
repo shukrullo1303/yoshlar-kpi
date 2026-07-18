@@ -16,6 +16,9 @@ urlpatterns = [
     # Directions (yo'nalishlar ro'yxati)
     path('directions/', include('src.api.urls.directions')),
 
+    # Superadmin endpoints (faqat is_superuser uchun)
+    path('superadmin/', include('src.api.urls.superadmin')),
+
     # Health check endpoint
     path('health/', include('src.api.urls.health')),
 

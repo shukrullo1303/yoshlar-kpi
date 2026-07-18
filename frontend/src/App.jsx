@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AdminPanel } from './components/AdminPanel'
 import { UserDashboard } from './components/UserDashboard'
 import { LoginPage } from './components/LoginPage'
@@ -25,10 +26,7 @@ export default function App() {
 
   useEffect(() => {
     api.me()
-      .then(u => {
-        setUser(u)
-        return api.getDirections()
-      })
+      .then(u => { setUser(u); return api.getDirections() })
       .then(setDirections)
       .catch(() => setUser(null))
       .finally(() => setAuthLoading(false))
@@ -39,6 +37,11 @@ export default function App() {
     setUser(null)
   }
 
+  const handleLogin = (u) => {
+    setUser(u)
+    api.getDirections().then(setDirections).catch(() => {})
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -47,17 +50,30 @@ export default function App() {
     )
   }
 
-  if (!user) {
-    return <LoginPage onLogin={u => {
-      setUser(u)
-      api.getDirections().then(setDirections).catch(() => {})
-    }} darkMode={darkMode} toggleDark={toggleDark} />
-  }
+  const adminProps = { user, directions, onLogout: handleLogout, darkMode, toggleDark }
+  const userProps  = { user, directions, onLogout: handleLogout, darkMode, toggleDark,
+                       onUserUpdate: () => api.me().then(setUser).catch(() => {}) }
 
-  if (user.is_staff || user.is_superuser) {
-    return <AdminPanel user={user} directions={directions} onLogout={handleLogout} darkMode={darkMode} toggleDark={toggleDark} />
-  }
-
-  return <UserDashboard user={user} directions={directions} onLogout={handleLogout} darkMode={darkMode} toggleDark={toggleDark}
-    onUserUpdate={() => api.me().then(setUser).catch(() => {})} />
+  return (
+    <BrowserRouter>
+      <Routes>
+        {!user ? (
+          <>
+            <Route path="/login" element={<LoginPage onLogin={handleLogin} darkMode={darkMode} toggleDark={toggleDark} />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        ) : (user.is_staff || user.is_superuser) ? (
+          <>
+            <Route path="/admin/*" element={<AdminPanel {...adminProps} />} />
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/user" element={<UserDashboard {...userProps} />} />
+            <Route path="*" element={<Navigate to="/user" replace />} />
+          </>
+        )}
+      </Routes>
+    </BrowserRouter>
+  )
 }
