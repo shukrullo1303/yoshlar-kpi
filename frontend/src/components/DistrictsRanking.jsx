@@ -177,7 +177,7 @@ function UmumiyReyting({ rows, DIRECTIONS }) {
               <th className="sticky left-10 z-40 bg-slate-800 px-4 py-3 text-left w-40">MFY nomi</th>
               {DIRECTIONS.map(d => (
                 <th key={d.key} className="px-2 py-3 text-center font-medium">
-                  <div className="font-semibold text-[10px] leading-tight">{d.label}</div>
+                  <div className="font-semibold text-xs leading-snug">{d.label}</div>
                   <div className="text-slate-400 text-[10px] font-normal mt-0.5">max {d.max}</div>
                 </th>
               ))}

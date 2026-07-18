@@ -374,8 +374,7 @@ export function SAScores({ directions }) {
       </div>
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Faqat admin tomonidan baholanmaydigan yo'nalishlar uchun ball belgilash mumkin.
-        <strong className="text-amber-500"> 1_ijro</strong> o'zgartirilmaydi.
+        Barcha yo'nalishlar bo'yicha oylik ball belgilash mumkin.
       </p>
 
       {loading ? (
@@ -410,35 +409,30 @@ export function SAScores({ directions }) {
                     const scoreObj = row.scores.find(s => s.direction === d.key)
                     const origScore = scoreObj?.score ?? 0
                     const k = `${row.profile_id}:${d.key}`
-                    const isLocked = d.key === '1_ijro'
                     const edited = k in edits && edits[k] !== String(origScore)
                     return (
                       <td key={d.key} className="px-2 py-1.5 text-center border-r border-slate-200 dark:border-slate-700 last:border-r-0">
-                        {isLocked ? (
-                          <span className="text-slate-400 text-xs">{origScore}</span>
-                        ) : (
-                          <div className="flex items-center justify-center gap-1">
-                            <input
-                              type="number" min="0" max={d.max_score} step="0.01"
-                              value={getEdit(row.profile_id, d.key, origScore)}
-                              onChange={e => setEdit(row.profile_id, d.key, e.target.value)}
-                              className={`w-16 text-center text-xs px-1 py-1 rounded border focus:outline-none focus:ring-1 focus:ring-blue-500
-                                ${edited ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-500'
-                                         : 'border-slate-300 dark:border-slate-600 bg-transparent text-slate-700 dark:text-slate-200'}`}
-                            />
-                            {edited && (
-                              <button onClick={() => save(row.profile_id, d.key)} disabled={saving[k]}
-                                title="Saqlash"
-                                className="w-5 h-5 flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 flex-shrink-0">
-                                {saving[k]
-                                  ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                                  : <Save className="w-3 h-3" />}
-                              </button>
-                            )}
-                            {msgs[k] === 'ok' && <span className="text-emerald-500 text-xs">✓</span>}
-                            {msgs[k] && msgs[k] !== 'ok' && <span className="text-red-500 text-xs" title={msgs[k]}>!</span>}
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            type="number" min="0" max={d.max_score} step="0.01"
+                            value={getEdit(row.profile_id, d.key, origScore)}
+                            onChange={e => setEdit(row.profile_id, d.key, e.target.value)}
+                            className={`w-16 text-center text-xs px-1 py-1 rounded border focus:outline-none focus:ring-1 focus:ring-blue-500
+                              ${edited ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-500'
+                                       : 'border-slate-300 dark:border-slate-600 bg-transparent text-slate-700 dark:text-slate-200'}`}
+                          />
+                          {edited && (
+                            <button onClick={() => save(row.profile_id, d.key)} disabled={saving[k]}
+                              title="Saqlash"
+                              className="w-5 h-5 flex items-center justify-center rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 flex-shrink-0">
+                              {saving[k]
+                                ? <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                                : <Save className="w-3 h-3" />}
+                            </button>
+                          )}
+                          {msgs[k] === 'ok' && <span className="text-emerald-500 text-xs">✓</span>}
+                          {msgs[k] && msgs[k] !== 'ok' && <span className="text-red-500 text-xs" title={msgs[k]}>!</span>}
+                        </div>
                       </td>
                     )
                   })}
