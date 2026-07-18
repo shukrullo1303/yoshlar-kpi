@@ -1,13 +1,20 @@
 import calendar
+import io
+import os
+import zipfile
 from datetime import date
+
+import openpyxl
+from openpyxl.styles import Alignment, Font, PatternFill
 
 from django.contrib.auth.models import User
 from django.db.models import Sum
+from django.http import HttpResponse
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from src.core.models import KPIDirection, KPITask, Profile
+from src.core.models import KPIDirection, KPITask, Profile, TaskAttachment
 
 
 class IsSuperAdmin(permissions.BasePermission):
@@ -246,9 +253,6 @@ class SuperAdminScoreView(APIView):
         except (Profile.DoesNotExist, KPIDirection.DoesNotExist):
             return Response({'error': "Foydalanuvchi yoki yo'nalish topilmadi"}, status=404)
 
-        if direction_key == '1_ijro':
-            return Response({'error': '1_ijro kunlik kiritiladi — to\'g\'ridan-to\'g\'ri o\'zgartirib bo\'lmaydi'}, status=400)
-
         score = float(score)
         if score < 0 or score > direction.max_score:
             return Response({'error': f"Ball 0–{direction.max_score} bo'lishi kerak"}, status=400)
@@ -278,3 +282,102 @@ class SuperAdminScoreView(APIView):
             )
 
         return Response({'ok': True, 'score': score})
+
+
+class SuperAdminMediaExportView(APIView):
+    """
+    GET  — barcha media fayllarni ZIP + Excel metadata sifatida yuklab olish
+    DELETE — barcha media fayllarni diskdan va DB dan o'chirish
+    """
+    permission_classes = [IsSuperAdmin]
+
+    _STATUS = {'sariq': 'Kutilmoqda', 'yashil': 'Tasdiqlangan', 'qizil': 'Rad etilgan'}
+
+    def _direction_label(self, key):
+        try:
+            return KPIDirection.objects.get(key=key).label
+        except KPIDirection.DoesNotExist:
+            return key
+
+    def get(self, request):
+        attachments = (
+            TaskAttachment.objects
+            .select_related('task', 'task__leader', 'task__leader__user')
+            .order_by('task__leader__mahalla_name', 'task__direction', 'task__month')
+        )
+
+        dir_labels = {d.key: d.label for d in KPIDirection.objects.all()}
+
+        # ── Excel ──────────────────────────────────────────────────────────────
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Media fayllar'
+
+        headers = ['#', 'MFY nomi', 'Ism Familiya', "Yo'nalish", 'Oy', 'Ball', 'Holat',
+                   'Yuklangan sana', 'Fayl turi', 'Fayl nomi']
+        ws.append(headers)
+
+        hdr_fill = PatternFill(fill_type='solid', fgColor='1E293B')
+        hdr_font = Font(bold=True, color='FFFFFF')
+        for cell in ws[1]:
+            cell.font = hdr_font
+            cell.fill = hdr_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        for i, att in enumerate(attachments, 1):
+            task    = att.task
+            profile = task.leader
+            month_str = str(task.month)[:7]
+            ws.append([
+                i,
+                f"{profile.mahalla_name} MFY",
+                profile.user.get_full_name() or profile.user.username,
+                dir_labels.get(task.direction, task.direction),
+                month_str,
+                task.score or 0,
+                self._STATUS.get(task.status, task.status),
+                att.created_at.strftime('%Y-%m-%d %H:%M') if att.created_at else '',
+                'Rasm' if att.is_image else 'PDF/Fayl',
+                os.path.basename(att.file.name) if att.file else '',
+            ])
+
+        col_widths = [4, 22, 20, 22, 10, 8, 14, 18, 10, 30]
+        for col_cells, w in zip(ws.columns, col_widths):
+            ws.column_dimensions[col_cells[0].column_letter].width = w
+
+        excel_buf = io.BytesIO()
+        wb.save(excel_buf)
+        excel_buf.seek(0)
+
+        # ── ZIP ────────────────────────────────────────────────────────────────
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr('metadata.xlsx', excel_buf.read())
+            for att in attachments:
+                if att.file:
+                    try:
+                        if os.path.exists(att.file.path):
+                            zf.write(att.file.path, att.file.name)
+                    except Exception:
+                        pass
+
+        zip_buf.seek(0)
+        filename = f"media-export-{date.today().isoformat()}.zip"
+        response = HttpResponse(zip_buf.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+
+    def delete(self, request):
+        attachments = TaskAttachment.objects.all()
+        deleted_files = 0
+        for att in attachments:
+            if att.file:
+                try:
+                    if os.path.exists(att.file.path):
+                        os.remove(att.file.path)
+                        deleted_files += 1
+                except Exception:
+                    pass
+        count = attachments.count()
+        attachments.delete()
+        return Response({'ok': True, 'deleted_records': count, 'deleted_files': deleted_files})

@@ -131,4 +131,6 @@ export const api = {
   saGetDirections: () => request('/superadmin/directions/'),
   saCreateDirection: (data) => request('/superadmin/directions/', { method: 'POST', body: JSON.stringify(data) }),
   saUpdateDirection: (pk, data) => request(`/superadmin/directions/${pk}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  // Superadmin — media
+  saDeleteMedia: () => request('/superadmin/media-export/', { method: 'DELETE' }),
 }

@@ -59,7 +59,10 @@ class AdminBulkScoreView(BaseAdminAPIView):
                 'task_id': task.id if task else None,
             }
             if direction == '1_ijro':
-                entry['score'] = task.score if task else None
+                if task:
+                    entry['score'] = 1 if (task.score or 0) > 0 else 0
+                else:
+                    entry['score'] = None
             else:
                 entry['score'] = task.score if task else None
             result.append(entry)
@@ -97,7 +100,7 @@ class AdminBulkScoreView(BaseAdminAPIView):
                 raw = 0
 
             if direction == '1_ijro':
-                actual_score = max(0.0, min(float(max_score_per_entry), raw))
+                actual_score = spd if raw == 1 else 0
             else:
                 actual_score = max(0.0, min(float(max_score_per_entry), raw))
 

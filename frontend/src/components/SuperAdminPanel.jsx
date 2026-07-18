@@ -692,3 +692,160 @@ function FormField({ label, value, onChange, placeholder }) {
     </div>
   )
 }
+
+// ─── Media Manager ────────────────────────────────────────────────────────────
+export function SAMediaManager() {
+  const [downloading, setDownloading] = useState(false)
+  const [deleting, setDeleting]       = useState(false)
+  const [confirm, setConfirm]         = useState(false)
+  const [result, setResult]           = useState(null)
+  const [error, setError]             = useState(null)
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/superadmin/media-export/', { credentials: 'include' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      const today = new Date().toISOString().slice(0, 10)
+      a.download = `media-export-${today}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setError(null)
+    try {
+      const data = await api.saDeleteMedia()
+      setResult(data)
+      setConfirm(false)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Media fayllar boshqaruvi</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Barcha yuklangan fayllarni ZIP + Excel metadata bilan yuklab oling yoki o'chiring.
+        </p>
+      </div>
+
+      {/* Download */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+            <Download className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100">Yuklab olish (ZIP)</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Barcha media fayllar + <strong>metadata.xlsx</strong> (MFY nomi, ism, yo'nalish, ball, holat, sana)
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+        >
+          {downloading
+            ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Yuklanmoqda...</>
+            : <><Download className="w-4 h-4" /> ZIP yuklab olish</>}
+        </button>
+      </div>
+
+      {/* Delete */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-900/40 p-5 space-y-3">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-semibold text-red-700 dark:text-red-400">Hammasini o'chirish</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Barcha yuklangan fayllar diskdan va bazadan o'chiriladi. <strong className="text-red-600">Bu amal qaytarib bo'lmaydi!</strong>
+            </p>
+          </div>
+        </div>
+        {result && (
+          <div className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+            ✓ {result.deleted_records} ta yozuv, {result.deleted_files} ta fayl o'chirildi
+          </div>
+        )}
+        <button
+          onClick={() => { setConfirm(true); setResult(null) }}
+          className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Barcha fayllarni o'chirish
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* Confirmation modal */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white">Ishonchingiz komilmi?</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  Barcha media fayllar butunlay o'chiriladi. Bu amalni ortga qaytarib bo'lmaydi.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirm(false)}
+                className="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                Bekor qilish
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+              >
+                {deleting
+                  ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />O'chirilmoqda...</span>
+                  : "Ha, o'chirish"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

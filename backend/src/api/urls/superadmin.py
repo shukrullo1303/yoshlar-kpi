@@ -1,7 +1,7 @@
 from django.urls import path
 from src.api.views.superadmin import (
     SuperAdminUserListView, SuperAdminUserDetailView, SuperAdminScoreView,
-    SuperAdminDirectionView, SuperAdminDirectionDetailView,
+    SuperAdminDirectionView, SuperAdminDirectionDetailView, SuperAdminMediaExportView,
 )
 
 app_name = 'superadmin'
@@ -12,4 +12,5 @@ urlpatterns = [
     path('scores/', SuperAdminScoreView.as_view(), name='scores'),
     path('directions/', SuperAdminDirectionView.as_view(), name='direction-list'),
     path('directions/<int:pk>/', SuperAdminDirectionDetailView.as_view(), name='direction-detail'),
+    path('media-export/', SuperAdminMediaExportView.as_view(), name='media-export'),
 ]
