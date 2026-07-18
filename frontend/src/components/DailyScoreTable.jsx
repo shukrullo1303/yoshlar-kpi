@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Save, CheckCircle2, Circle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Save, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '../services/api'
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ function IjroCalendarView({ month }) {
   const [selectedDate, setSelectedDate] = useState(null)
   const [dayData, setDayData] = useState({}) // dateStr -> {rows, scorePerDay, workdays}
   const [rows, setRows] = useState([])
-  const [scores, setScores] = useState({})
+  const [scores, setScores] = useState({})   // profile_id -> float string
   const [scorePerDay, setScorePerDay] = useState(0)
   const [workdays, setWorkdays] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -101,7 +101,7 @@ function IjroCalendarView({ month }) {
       setScorePerDay(cached.scorePerDay)
       setWorkdays(cached.workdays)
       const init = {}
-      cached.rows.forEach(r => { init[r.profile_id] = r.score ?? 0 })
+      cached.rows.forEach(r => { init[r.profile_id] = r.score != null ? String(r.score) : '' })
       setScores(init)
       return
     }
@@ -116,7 +116,7 @@ function IjroCalendarView({ month }) {
       setScorePerDay(spd)
       setWorkdays(wd)
       const init = {}
-      r.forEach(row => { init[row.profile_id] = row.score ?? 0 })
+      r.forEach(row => { init[row.profile_id] = row.score != null ? String(row.score) : '' })
       setScores(init)
       setDayData(prev => ({ ...prev, [dateStr]: { rows: r, scorePerDay: spd, workdays: wd } }))
     } catch (e) {
@@ -133,10 +133,6 @@ function IjroCalendarView({ month }) {
     loadDay(ds)
   }
 
-  const toggle = (pid) => {
-    setScores(prev => ({ ...prev, [pid]: prev[pid] === 1 ? 0 : 1 }))
-  }
-
   const handleSave = async () => {
     if (!selectedDate) return
     setSaving(true)
@@ -144,7 +140,7 @@ function IjroCalendarView({ month }) {
     try {
       const payload = rows.map(r => ({
         profile_id: r.profile_id,
-        score: scores[r.profile_id] ?? 0,
+        score: parseFloat(scores[r.profile_id] ?? 0) || 0,
       }))
       await api.saveBulkScores('1_ijro', selectedDate, payload)
       setSaved(true)
@@ -163,9 +159,11 @@ function IjroCalendarView({ month }) {
     }
   }
 
-  const presentCount = rows.filter(r => (scores[r.profile_id] ?? 0) === 1).length
+  const filledCount = rows.filter(r => {
+    const s = scores[r.profile_id]
+    return s !== null && s !== '' && s !== undefined && parseFloat(s) > 0
+  }).length
 
-  // Compute attendance summary per day from loaded data
   const getDateStatus = (dt) => {
     const ds = toDateStr(dt)
     const cached = dayData[ds]
@@ -182,7 +180,7 @@ function IjroCalendarView({ month }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 overflow-x-hidden">
       {/* Month navigation */}
       <div className="flex items-center justify-between">
         <button
@@ -299,7 +297,7 @@ function IjroCalendarView({ month }) {
             </div>
             <div className="flex items-center gap-3">
               <div className="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-4 py-2">
-                <span className="font-bold text-blue-600">{presentCount}</span> / {rows.length} ta qatnashdi
+                <span className="font-bold text-blue-600">{filledCount}</span> / {rows.length} ta to'ldirildi
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}
               {saved && (
@@ -329,34 +327,35 @@ function IjroCalendarView({ month }) {
                   <tr className="bg-slate-800 text-white text-xs">
                     <th className="px-4 py-3 text-left w-10">#</th>
                     <th className="px-4 py-3 text-left">MFY nomi</th>
-                    <th className="px-4 py-3 text-center">Qatnashdi</th>
+                    <th className="px-4 py-3 text-center">Ball (0 – {scorePerDay.toFixed(2)})</th>
                     <th className="px-4 py-3 text-center w-24">Holat</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {rows.map((row, idx) => {
-                    const present = (scores[row.profile_id] ?? 0) === 1
+                    const score = scores[row.profile_id] ?? ''
+                    const hasScore = score !== '' && parseFloat(score) > 0
                     return (
-                      <tr key={row.profile_id} className={`transition-colors ${present ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-white dark:bg-slate-800'}`}>
+                      <tr key={row.profile_id} className={`transition-colors ${hasScore ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-white dark:bg-slate-800'}`}>
                         <td className="px-4 py-2.5 text-slate-400 text-xs font-mono">{idx + 1}</td>
                         <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100">{row.mahalla_name} MFY</td>
                         <td className="px-4 py-2.5 text-center">
-                          <button
-                            onClick={() => toggle(row.profile_id)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                              present
-                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                            }`}
-                          >
-                            {present
-                              ? <><CheckCircle2 className="w-4 h-4" /> Qatnashdi</>
-                              : <><Circle className="w-4 h-4" /> Yo'q</>}
-                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={scorePerDay}
+                            step={0.0001}
+                            value={score}
+                            onChange={e => setScores(prev => ({ ...prev, [row.profile_id]: e.target.value }))}
+                            placeholder="0"
+                            className="w-24 text-center border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-900 dark:bg-slate-700 dark:text-white"
+                          />
                         </td>
                         <td className="px-4 py-2.5 text-center">
                           {row.task_id ? (
-                            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Saqlangan</span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                              <CheckCircle2 className="w-3 h-3" /> Saqlangan
+                            </span>
                           ) : (
                             <span className="text-xs text-slate-300">—</span>
                           )}
@@ -441,7 +440,7 @@ function MonthlyScoreTable({ direction, maxScore, month }) {
   })()
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 overflow-x-hidden">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="font-semibold text-slate-800 dark:text-slate-100">{monthLabel}</p>
         <div className="flex items-center gap-3">
