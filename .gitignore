@@ -75,7 +75,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
-dist/
 build/
 .tox/
 .hypothesis/
