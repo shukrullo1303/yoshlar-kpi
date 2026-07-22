@@ -4,6 +4,7 @@ from src.api.views import (
     AdminDistrictsRankingView, AdminBulkScoreView, AdminMonthPlanView,
     AdminBulkReviewView, AdminMFYStatusView,
 )
+from src.api.views.wialon_proxy import WialonVehiclesView
 
 app_name = 'kpi_admin'
 
@@ -16,4 +17,5 @@ urlpatterns = [
     path('bulk-score/', AdminBulkScoreView.as_view(), name='bulk-score'),
     path('month-plan/', AdminMonthPlanView.as_view(), name='month-plan'),
     path('mfy-status/', AdminMFYStatusView.as_view(), name='mfy-status'),
+    path('gps/vehicles/', WialonVehiclesView.as_view(), name='gps-vehicles'),
 ]
