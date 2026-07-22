@@ -54,7 +54,7 @@ class WialonVehiclesView(APIView):
                 'force': 1,
                 'flags': 1025,
                 'from': 0,
-                'count': 0,
+                'to': 500,
             }, sid=sid)
 
             if 'error' in data:
