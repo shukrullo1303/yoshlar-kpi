@@ -48,7 +48,7 @@ class AdminDistrictsRankingView(BaseAdminAPIView):
         month_from = request.query_params.get('month_from') or month_str
         month_to = request.query_params.get('month_to') or month_str
 
-        profiles = Profile.objects.select_related('user').all()
+        profiles = Profile.objects.select_related('user').filter(is_hokim=False)
         directions = list(KPIDirection.objects.filter(is_active=True).order_by('order'))
         result = []
 

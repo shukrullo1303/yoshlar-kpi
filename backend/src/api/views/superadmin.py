@@ -211,7 +211,7 @@ class SuperAdminScoreView(APIView):
             month = f'{d.year}-{d.month:02d}-01'
 
         directions = list(KPIDirection.objects.filter(is_active=True).order_by('order'))
-        profiles   = Profile.objects.select_related('user').order_by('mahalla_name')
+        profiles   = Profile.objects.select_related('user').filter(is_hokim=False).order_by('mahalla_name')
 
         m_date  = date.fromisoformat(month)
         m_last  = date(m_date.year, m_date.month,

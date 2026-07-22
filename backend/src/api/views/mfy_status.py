@@ -20,7 +20,7 @@ class AdminMFYStatusView(BaseAdminAPIView):
         if not direction_key:
             return Response({'error': 'direction param majburiy'}, status=status.HTTP_400_BAD_REQUEST)
 
-        profiles = Profile.objects.select_related('user').all().order_by('mahalla_name')
+        profiles = Profile.objects.select_related('user').filter(is_hokim=False).order_by('mahalla_name')
         result = []
 
         for profile in profiles:

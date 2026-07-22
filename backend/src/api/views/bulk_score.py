@@ -56,7 +56,7 @@ class AdminBulkScoreView(BaseAdminAPIView):
         if not direction or not date_str:
             return Response({'error': 'direction va date kerak'}, status=status.HTTP_400_BAD_REQUEST)
 
-        profiles = Profile.objects.all().order_by('mahalla_name')
+        profiles = Profile.objects.filter(is_hokim=False).order_by('mahalla_name')
         result = []
 
         extra = {}
