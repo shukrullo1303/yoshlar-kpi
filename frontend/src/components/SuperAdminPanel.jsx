@@ -43,6 +43,7 @@ function UserRow({ profile, idx, onSaved }) {
     district:     profile.district || '',
     password:     '',
     is_active:    profile.is_active,
+    is_hokim:     profile.is_hokim || false,
   })
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); setError('') }
@@ -70,7 +71,8 @@ function UserRow({ profile, idx, onSaved }) {
     form.mahalla_name !== (profile.mahalla_name || '') ||
     form.district !== (profile.district || '') ||
     form.password.trim() !== '' ||
-    form.is_active !== profile.is_active
+    form.is_active !== profile.is_active ||
+    form.is_hokim !== (profile.is_hokim || false)
 
   return (
     <tr className={idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950'}>
@@ -138,6 +140,15 @@ function UserRow({ profile, idx, onSaved }) {
           type="checkbox" checked={form.is_active}
           onChange={e => set('is_active', e.target.checked)}
           className="w-4 h-4 accent-blue-600 cursor-pointer"
+        />
+      </td>
+
+      {/* Hokim */}
+      <td className="px-3 py-2 text-center">
+        <input
+          type="checkbox" checked={form.is_hokim}
+          onChange={e => set('is_hokim', e.target.checked)}
+          className="w-4 h-4 accent-purple-600 cursor-pointer"
         />
       </td>
 
@@ -245,6 +256,7 @@ export function SAUserList() {
                 <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 min-w-28">Familya</th>
                 <th className="px-2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 min-w-36">Mahalla</th>
                 <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-12">Faol</th>
+                <th className="px-3 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-14">Hokim</th>
                 <th className="sticky right-0 bg-slate-100 dark:bg-slate-800 px-2 py-2.5 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 w-24 border-l border-slate-200 dark:border-slate-700"></th>
               </tr>
             </thead>
@@ -262,7 +274,7 @@ export function SAUserList() {
 
 // ─── Create User ─────────────────────────────────────────────────────────────
 export function SACreateUser() {
-  const [form, setForm]       = useState({ username: '', password: '', first_name: '', last_name: '', mahalla_name: '', district: '' })
+  const [form, setForm]       = useState({ username: '', password: '', first_name: '', last_name: '', mahalla_name: '', district: '', is_hokim: false })
   const [saving, setSaving]   = useState(false)
   const [showPw, setShowPw]   = useState(false)
   const [error, setError]     = useState('')
@@ -275,7 +287,7 @@ export function SACreateUser() {
     try {
       await api.saCreateUser(form)
       setSuccess(`"${form.username}" akkaunt yaratildi!`)
-      setForm({ username: '', password: '', first_name: '', last_name: '', mahalla_name: '', district: '' })
+      setForm({ username: '', password: '', first_name: '', last_name: '', mahalla_name: '', district: '', is_hokim: false })
     } catch (e) {
       setError(e.message)
     } finally {
@@ -283,10 +295,30 @@ export function SACreateUser() {
     }
   }
 
+  const isDisabled = saving || !form.username || !form.password || (!form.is_hokim && !form.mahalla_name)
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-slate-900 dark:text-white">Yangi foydalanuvchi</h2>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+
+        {/* Role selector */}
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Rol *</label>
+          <div className="flex gap-2">
+            <button type="button"
+              onClick={() => set('is_hokim', false)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${!form.is_hokim ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+              MFY yetakchisi
+            </button>
+            <button type="button"
+              onClick={() => set('is_hokim', true)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${form.is_hokim ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+              Hokim
+            </button>
+          </div>
+        </div>
+
         <FormField label="Login *" value={form.username} onChange={v => set('username', v)} placeholder="username" />
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Parol *</label>
@@ -301,13 +333,15 @@ export function SACreateUser() {
         </div>
         <FormField label="Ism" value={form.first_name} onChange={v => set('first_name', v)} />
         <FormField label="Familya" value={form.last_name} onChange={v => set('last_name', v)} />
-        <FormField label="Mahalla nomi *" value={form.mahalla_name} onChange={v => set('mahalla_name', v)} />
-        <FormField label="Tuman" value={form.district} onChange={v => set('district', v)} />
+        {!form.is_hokim && (
+          <FormField label="Mahalla nomi *" value={form.mahalla_name} onChange={v => set('mahalla_name', v)} />
+        )}
+        <FormField label="Tuman" value={form.district} onChange={v => set('district', v)} placeholder="Asaka" />
 
         <div className="sm:col-span-2 flex items-center justify-end gap-3 flex-wrap pt-1">
           {error   && <span className="text-xs text-red-500 mr-auto">{error}</span>}
           {success && <span className="text-xs text-emerald-600 dark:text-emerald-400 mr-auto">{success}</span>}
-          <button onClick={save} disabled={saving || !form.username || !form.password || !form.mahalla_name}
+          <button onClick={save} disabled={isDisabled}
             className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50">
             <Plus className="w-4 h-4" />
             {saving ? 'Yaratilmoqda...' : 'Yaratish'}

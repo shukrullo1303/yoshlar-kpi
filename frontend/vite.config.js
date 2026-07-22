@@ -14,6 +14,11 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/traccar': {
+        target: 'http://localhost:8082',
+        rewrite: path => path.replace(/^\/traccar/, ''),
+        changeOrigin: true,
+      },
     },
   },
 })

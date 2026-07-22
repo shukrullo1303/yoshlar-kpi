@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AdminPanel } from './components/AdminPanel'
 import { UserDashboard } from './components/UserDashboard'
+import { HokimDashboard } from './components/HokimDashboard'
 import { LoginPage } from './components/LoginPage'
 import { api } from './services/api'
 
@@ -72,6 +73,11 @@ export default function App() {
           <>
             <Route path="/admin/*" element={<AdminPanel {...adminProps} />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
+          </>
+        ) : user.is_hokim ? (
+          <>
+            <Route path="/hokim" element={<HokimDashboard {...adminProps} />} />
+            <Route path="*" element={<Navigate to="/hokim" replace />} />
           </>
         ) : (
           <>

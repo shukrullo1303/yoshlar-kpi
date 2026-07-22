@@ -5,8 +5,9 @@ from src.core.models.base import *
 class Profile(BaseModel):
     """76 ta mahalla yoshlar yetakchilari ma'lumotlari"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='kpi_profile')
-    mahalla_name = models.CharField(max_length=255, verbose_name="Mahalla nomi")
+    mahalla_name = models.CharField(max_length=255, verbose_name="Mahalla nomi", blank=True, default="")
     district = models.CharField(max_length=100, default="Asaka", verbose_name="Tuman")
+    is_hokim = models.BooleanField(default=False, verbose_name="Hokim")
     
     def __str__(self):
         return f"{self.mahalla_name} - {self.user.get_full_name()}"

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Users, UserPlus, Sliders, Archive } from 'lucide-react'
+import { BarChart2, Trophy, LogOut, Menu, X, LayoutGrid, CalendarDays, Users, UserPlus, Sliders, Archive, MapPin, UserCog, Eye, EyeOff } from 'lucide-react'
 import { api } from '../services/api'
 import { DistrictsRanking } from './DistrictsRanking'
 import { DailyScoreTable } from './DailyScoreTable'
@@ -8,6 +8,7 @@ import { TaskSlider } from './TaskSlider'
 import { MonthPlanBar } from './MonthPlanBar'
 import { MFYStatusPanel } from './MFYStatusPanel'
 import { SAUserList, SACreateUser, SAScores, SADirections, SAMediaManager } from './SuperAdminPanel'
+import { GpsPage } from './GpsPage'
 
 const NAV_UMUMIY    = '__umumiy__'
 const NAV_YONALISH  = '__yonalish__'
@@ -17,21 +18,111 @@ const NAV_SA_CREATE = '__sa_create__'
 const NAV_SA_SCORES = '__sa_scores__'
 const NAV_SA_DIRS   = '__sa_dirs__'
 const NAV_SA_MEDIA  = '__sa_media__'
+const NAV_GPS       = '__gps__'
 
 // URL segment  ↔  internal nav key
 const URL_TO_NAV = {
   reja: NAV_REJA, reyting: NAV_UMUMIY, yonalish: NAV_YONALISH,
   'sa-users': NAV_SA_USERS, 'sa-create': NAV_SA_CREATE, 'sa-scores': NAV_SA_SCORES,
-  'sa-dirs': NAV_SA_DIRS, 'sa-media': NAV_SA_MEDIA,
+  'sa-dirs': NAV_SA_DIRS, 'sa-media': NAV_SA_MEDIA, 'gps': NAV_GPS,
 }
 const NAV_TO_URL = {
   [NAV_REJA]: 'reja', [NAV_UMUMIY]: 'reyting', [NAV_YONALISH]: 'yonalish',
   [NAV_SA_USERS]: 'sa-users', [NAV_SA_CREATE]: 'sa-create', [NAV_SA_SCORES]: 'sa-scores',
-  [NAV_SA_DIRS]: 'sa-dirs', [NAV_SA_MEDIA]: 'sa-media',
+  [NAV_SA_DIRS]: 'sa-dirs', [NAV_SA_MEDIA]: 'sa-media', [NAV_GPS]: 'gps',
 }
 
 function toMonthParam(val) {
   return val ? `${val}-01` : null
+}
+
+function AdminProfileModal({ user, onClose, onUpdated }) {
+  const [username, setUsername]       = useState(user?.username || '')
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [showOld, setShowOld]         = useState(false)
+  const [showNew, setShowNew]         = useState(false)
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState(null)
+  const [success, setSuccess]         = useState(null)
+
+  const handleSave = async () => {
+    setError(null); setSuccess(null)
+    if (username === (user?.username || '') && !newPassword) {
+      setError("O'zgartirish uchun kamida login yoki parolni to'ldiring"); return
+    }
+    setSaving(true)
+    try {
+      const res = await api.updateProfile({ username, old_password: oldPassword, new_password: newPassword })
+      setSuccess(res.message)
+      setOldPassword(''); setNewPassword('')
+      if (onUpdated) onUpdated(res.username)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h2 className="font-bold text-slate-900 dark:text-slate-100">Profil sozlamalari</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Login (username)</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white text-slate-900 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div className="pt-1 border-t border-slate-100 dark:border-slate-700">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Parolni o'zgartirish</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Eski parol</label>
+                <div className="relative">
+                  <input type={showOld ? 'text' : 'password'} value={oldPassword} onChange={e => setOldPassword(e.target.value)}
+                    placeholder="Joriy parol"
+                    className="w-full pr-9 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white text-slate-900 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <button type="button" onClick={() => setShowOld(p => !p)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    {showOld ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Yangi parol</label>
+                <div className="relative">
+                  <input type={showNew ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Kamida 6 ta belgi"
+                    className="w-full pr-9 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white text-slate-900 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <button type="button" onClick={() => setShowNew(p => !p)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {error   && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {success && <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p>}
+        </div>
+        <div className="px-6 pb-5 flex gap-3">
+          <button onClick={onClose} className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600">
+            Yopish
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold">
+            {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function AdminPanel({ user, directions: directionsProp = [], onLogout, darkMode, toggleDark }) {
@@ -44,6 +135,8 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
   const [stats, setStats]                         = useState([])
   const [subView, setSubView]                     = useState('tasks') // 'tasks' | 'plan' | 'mfy'
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [profileOpen, setProfileOpen]             = useState(false)
+  const [currentUser, setCurrentUser]             = useState(user)
 
   // nav is derived from URL — no useState needed
   const nav = URL_TO_NAV[urlPage] || urlPage || ''
@@ -116,6 +209,9 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
 
   function renderMain() {
     if (!nav) return null
+
+    // GPS page
+    if (nav === NAV_GPS) return <GpsPage darkMode={darkMode} />
 
     // Superadmin pages
     if (nav === NAV_SA_USERS)  return <SAUserList />
@@ -310,17 +406,39 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col">
+    <div className="h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 flex-shrink-0">
+      <div id="admin-header" className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 flex-shrink-0">
         <div className="container py-4 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button onClick={() => setMobileSidebarOpen(true)}
               className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 flex-shrink-0">
               <Menu className="w-5 h-5" />
             </button>
-            <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">⚙</span>
-            <h1 className="text-sm sm:text-base font-bold truncate">Admin Panel</h1>
+            
+            <button
+              onClick={() => directionsProp.length > 0 && handleNav(directionsProp[0].key)}
+              className="flex items-center gap-2 group"
+              title="KPI paneliga qaytish"
+            >
+              <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 group-hover:bg-blue-700 transition-colors">⚙</span>
+              <h1 className="text-sm sm:text-base font-bold truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Yoshlar KPI</h1>
+            </button>
+            {nav === NAV_GPS && (
+              <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0">GPS</span>
+            )}
+            {user?.is_superuser && (
+              <button onClick={() => handleNav(NAV_GPS)}
+                title="GPS Kuzatuv"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+                  nav === NAV_GPS
+                    ? 'bg-green-600 text-white'
+                    : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40'
+                }`}>
+                <MapPin className="w-4 h-4" />
+                <span className="hidden sm:inline font-semibold">GPS</span>
+              </button>
+            )}
             {totalPending > 0 && (
               <span className="text-xs font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full flex-shrink-0" title="Kutilmoqda">
                 {totalPending}
@@ -344,12 +462,15 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               )}
             </div>
 
-            <span className="text-sm text-slate-600 dark:text-slate-400 hidden md:block truncate max-w-32">
-              {user.full_name || user.username}
+            <button onClick={() => setProfileOpen(true)}
+              title="Profil sozlamalari"
+              className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors hidden md:flex truncate max-w-40">
+              <span className="truncate">{currentUser?.full_name || currentUser?.username || user.full_name || user.username}</span>
               {user.is_superuser && (
-                <span className="ml-2 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">Superadmin</span>
+                <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full flex-shrink-0">Superadmin</span>
               )}
-            </span>
+              <UserCog className="w-4 h-4 flex-shrink-0" />
+            </button>
 
             <button onClick={toggleDark}
               className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
@@ -384,14 +505,31 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
         </div>
       )}
 
-      <div className="flex flex-1 container py-6 gap-6 items-start">
-        <aside className="hidden lg:block w-64 flex-shrink-0 space-y-5 sticky top-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
-          {sidebarContent}
-        </aside>
-        <main className="flex-1 min-w-0 overflow-y-auto max-h-[calc(100vh-5rem)]">
+      {nav === NAV_GPS ? (
+        <div className="flex flex-1 overflow-hidden min-h-0">
           {renderMain()}
-        </main>
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 container py-6 gap-6 items-start">
+          <aside className="hidden lg:block w-64 flex-shrink-0 space-y-5 sticky top-6 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            {sidebarContent}
+          </aside>
+          <main className="flex-1 min-w-0 overflow-y-auto max-h-[calc(100vh-5rem)]">
+            {renderMain()}
+          </main>
+        </div>
+      )}
+
+      {profileOpen && (
+        <AdminProfileModal
+          user={currentUser || user}
+          onClose={() => setProfileOpen(false)}
+          onUpdated={(newUsername) => {
+            setCurrentUser(u => ({ ...u, username: newUsername || u?.username }))
+            setProfileOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }

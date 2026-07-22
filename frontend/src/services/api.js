@@ -82,6 +82,13 @@ export const api = {
     const qs = params.toString()
     return request(`/admin/districts/${qs ? `?${qs}` : ''}`)
   },
+  getHokimRanking: (monthFrom, monthTo) => {
+    const params = new URLSearchParams()
+    if (monthFrom) params.set('month_from', monthFrom)
+    if (monthTo) params.set('month_to', monthTo)
+    const qs = params.toString()
+    return request(`/hokim/ranking/${qs ? `?${qs}` : ''}`)
+  },
   getBulkScores: (direction, date) =>
     request(`/admin/bulk-score/?direction=${direction}&date=${date}`),
   saveBulkScores: (direction, date, scores) =>
@@ -107,10 +114,10 @@ export const api = {
     if (monthTo) params.set('month_to', monthTo)
     return request(`/admin/mfy-status/?${params.toString()}`)
   },
-  updateProfile: (first_name, last_name, old_password, new_password) =>
+  updateProfile: (payload) =>
     request('/user/profile/', {
       method: 'POST',
-      body: JSON.stringify({ first_name, last_name, old_password, new_password }),
+      body: JSON.stringify(payload),
     }),
   getRejectedTasks: (direction, month) => {
     const params = new URLSearchParams()

@@ -4,19 +4,27 @@ from rest_framework import permissions, status
 
 
 class UserProfileUpdateView(APIView):
-    """Foydalanuvchi o'z ismini va parolini yangilaydi."""
+    """Foydalanuvchi o'z ismini, loginini va parolini yangilaydi."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         user = request.user
         data = request.data
 
-        first_name = data.get('first_name', '').strip()
-        last_name = data.get('last_name', '').strip()
+        first_name   = data.get('first_name', '').strip()
+        last_name    = data.get('last_name', '').strip()
+        new_username = data.get('username', '').strip()
         old_password = data.get('old_password', '')
         new_password = data.get('new_password', '')
 
         updated = []
+
+        if new_username and new_username != user.username:
+            from django.contrib.auth.models import User as DjangoUser
+            if DjangoUser.objects.filter(username=new_username).exclude(pk=user.pk).exists():
+                return Response({'error': 'Bu login band'}, status=status.HTTP_400_BAD_REQUEST)
+            user.username = new_username
+            updated.append('login')
 
         if first_name or last_name:
             if first_name:
@@ -42,4 +50,5 @@ class UserProfileUpdateView(APIView):
         return Response({
             'message': f"{', '.join(updated)} yangilandi",
             'full_name': user.get_full_name(),
+            'username': user.username,
         })

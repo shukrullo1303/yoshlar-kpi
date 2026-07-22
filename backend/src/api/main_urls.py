@@ -19,6 +19,9 @@ urlpatterns = [
     # Superadmin endpoints (faqat is_superuser uchun)
     path('superadmin/', include('src.api.urls.superadmin')),
 
+    # Hokim dashboard endpoints
+    path('hokim/', include('src.api.urls.hokim')),
+
     # Health check endpoint
     path('health/', include('src.api.urls.health')),
 

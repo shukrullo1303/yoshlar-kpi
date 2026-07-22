@@ -62,8 +62,9 @@ const DIR_FIELDS = {
 }
 
 function ProfileModal({ onClose, onUpdated }) {
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
+  const [username, setUsername]     = useState('')
+  const [firstName, setFirstName]   = useState('')
+  const [lastName, setLastName]     = useState('')
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
@@ -72,15 +73,15 @@ function ProfileModal({ onClose, onUpdated }) {
 
   const handleSave = async () => {
     setError(null); setSuccess(null)
-    if (!firstName && !lastName && !newPassword) {
+    if (!username && !firstName && !lastName && !newPassword) {
       setError("O'zgartirish uchun kamida bitta maydonni to'ldiring"); return
     }
     setSaving(true)
     try {
-      const res = await api.updateProfile(firstName, lastName, oldPassword, newPassword)
+      const res = await api.updateProfile({ username, first_name: firstName, last_name: lastName, old_password: oldPassword, new_password: newPassword })
       setSuccess(res.message)
       setOldPassword(''); setNewPassword('')
-      if (onUpdated) onUpdated(res.full_name)
+      if (onUpdated) onUpdated(res.full_name, res.username)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -98,6 +99,12 @@ function ProfileModal({ onClose, onUpdated }) {
           </button>
         </div>
         <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Login (username)</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+              placeholder="Yangi login..."
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white text-slate-900 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Ism</label>

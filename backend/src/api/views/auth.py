@@ -49,6 +49,7 @@ class LoginView(APIView):
             'full_name': user.get_full_name(),
             'is_superuser': user.is_superuser,
             'is_staff': user.is_staff,
+            'is_hokim': profile.is_hokim if profile else False,
             'mahalla_name': profile.mahalla_name if profile else None,
             'district': profile.district if profile else None,
         })
@@ -81,6 +82,7 @@ class MeView(APIView):
             'full_name': user.get_full_name(),
             'is_superuser': user.is_superuser,
             'is_staff': user.is_staff,
+            'is_hokim': profile.is_hokim if profile else False,
             'mahalla_name': profile.mahalla_name if profile else None,
             'district': profile.district if profile else None,
         })

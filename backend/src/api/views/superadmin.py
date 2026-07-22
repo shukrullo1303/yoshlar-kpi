@@ -38,6 +38,7 @@ class SuperAdminUserListView(APIView):
             'district': p.district,
             'is_active': p.user.is_active,
             'is_staff': p.user.is_staff,
+            'is_hokim': p.is_hokim,
         } for p in profiles])
 
     def post(self, request):
@@ -47,9 +48,12 @@ class SuperAdminUserListView(APIView):
         first_name   = request.data.get('first_name', '').strip()
         last_name    = request.data.get('last_name', '').strip()
         district     = request.data.get('district', '').strip()
+        is_hokim     = bool(request.data.get('is_hokim', False))
 
-        if not username or not password or not mahalla_name:
-            return Response({'error': 'username, password va mahalla_name majburiy'}, status=400)
+        if not username or not password:
+            return Response({'error': 'username va password majburiy'}, status=400)
+        if not is_hokim and not mahalla_name:
+            return Response({'error': 'MFY yetakchisi uchun mahalla_name majburiy'}, status=400)
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Bu username allaqachon mavjud'}, status=400)
 
@@ -57,7 +61,9 @@ class SuperAdminUserListView(APIView):
             username=username, password=password,
             first_name=first_name, last_name=last_name,
         )
-        profile = Profile.objects.create(user=user, mahalla_name=mahalla_name, district=district)
+        profile = Profile.objects.create(
+            user=user, mahalla_name=mahalla_name, district=district, is_hokim=is_hokim,
+        )
         return Response({'id': profile.id, 'username': username}, status=201)
 
 
@@ -93,6 +99,8 @@ class SuperAdminUserDetailView(APIView):
             profile.district = d['district'].strip()
         if 'is_active' in d:
             user.is_active = bool(d['is_active'])
+        if 'is_hokim' in d:
+            profile.is_hokim = bool(d['is_hokim'])
 
         user.save()
         profile.save()

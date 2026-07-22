@@ -340,7 +340,7 @@ function YonalishReyting({ rows, DIRECTIONS }) {
 }
 
 // ─── Asosiy komponent ─────────────────────────────────────────────────────────
-export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, monthTo, hideTabs = false, directions: directionsProp = null }) {
+export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, monthTo, hideTabs = false, directions: directionsProp = null, apiMethod = null }) {
   // Build DIRECTIONS from API prop when available, so max_score stays in sync with DB
   const DIRECTIONS = directionsProp && directionsProp.length
     ? directionsProp
@@ -364,7 +364,8 @@ export function DistrictsRanking({ initialTab = 'umumiy', month, monthFrom, mont
   useEffect(() => {
     setLoading(true)
     setError(null)
-    api.getDistrictsRanking(resolvedFrom, resolvedTo)
+    const fetchFn = apiMethod || api.getDistrictsRanking
+    fetchFn(resolvedFrom, resolvedTo)
       .then(setRows)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
