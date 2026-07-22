@@ -81,15 +81,15 @@ backend/src/
     profile.py          ← Profile
     plan.py             ← KPIMonthPlan
   api/
-    views/              ← one file per view group (auth, stats, slider, review, bulk_score, month_plan, districts, mfy_status, user_submit, profile_update)
+    views/              ← one file per view group (auth, stats, slider, review, bulk_score, month_plan, districts, mfy_status, user_submit, profile_update, hokim, wialon_proxy, superadmin)
     serializer/         ← base.py + specialized serializers
-    urls/               ← split by admin/user/auth/directions
+    urls/               ← split by admin/user/auth/directions (hokim.py for hokim-only endpoints)
 ```
 
 ### Backend models (`src/core/models/`)
 
 - **`BaseModel`** (abstract) — provides `created_at`, `updated_at`. Never redefine these in subclasses.
-- **`Profile`** — OneToOne → Django `User`. Fields: `mahalla_name`, `district`. Accessed via `request.user.kpi_profile`.
+- **`Profile`** — OneToOne → Django `User`. Fields: `mahalla_name`, `district`, `is_hokim` (bool, default `False`). Accessed via `request.user.kpi_profile`. Hokim profiles have `mahalla_name=''` and are **excluded** from all MFY ranking/scoring views via `.filter(is_hokim=False)`.
 - **`KPIDirection`** — DB-driven direction config. Fields: `key` (unique slug like `1_ijro`), `label`, `max_score`, `order`, `admin_scored`, `is_uploadable`, `info`, `how`, `is_active`, `default_target` (int, 0 means no default). **All views query this model** — `direction` field on `KPITask` is a plain CharField with no FK/choices constraint.
 - **`KPITask`** — FK → `Profile` (`related_name='tasks'`). Key fields:
   - `direction` — CharField matching a `KPIDirection.key` (no FK, no DB-level choices constraint; model still has `DIRECTION_CHOICES` list but it's not enforced)
@@ -135,7 +135,10 @@ All under `/api/`. Auth endpoints are open; `/api/admin/*` requires `IsAdminUser
 | GET | `/api/user/dashboard/?month=` | Authenticated user's scores per direction |
 | POST | `/api/user/submit/` | `multipart/form-data` — direction, month, files, optional fields |
 | GET | `/api/user/rejected/?direction=&month=` | Authenticated user's rejected tasks |
-| POST | `/api/user/profile/` | Update name/password: `{first_name, last_name, old_password, new_password}` |
+| POST | `/api/user/profile/` | Update profile: `{username?, first_name?, last_name?, old_password?, new_password?}` — `old_password` required when changing password or username |
+| GET | `/api/hokim/ranking/?month_from=&month_to=` | Same as districts but accessible to hokim role (IsAuthenticated, not IsAdminUser) |
+| GET | `/api/admin/gps/vehicles/` | Wialon proxy — returns live vehicle positions `[{id, name, latitude, longitude, speed, time, course}]` |
+| GET/PATCH/POST/DELETE | `/api/admin/sa/*` | Superadmin user management (SAUserListView, SAScoreView, SADirectionsView, SAMediaView) |
 | GET | `/api/health/` | Health check (open) |
 | GET | `/api/docs/swagger/` | Swagger UI (drf-yasg) |
 | GET | `/api/docs/redoc/` | ReDoc API docs |
@@ -158,12 +161,13 @@ All API calls go through `src/services/api.js` — a single module that handles 
 - Do NOT put `* { margin: 0; padding: 0 }` in unlayered CSS — it kills all `px-*`/`py-*`/`m-*` utilities. Tailwind's preflight already handles resets.
 - Dark mode is defined as `@custom-variant dark (&:where(.dark, .dark *))` in `index.css`. When writing new dark mode styles, always use Tailwind `dark:` variant prefix (e.g. `dark:bg-slate-800`). All components must have a **light-mode base class** AND a `dark:` variant — never hardcode only dark colors like `bg-slate-900` without a light alternative.
 
-**Auth flow:** `App.jsx` calls `GET /api/auth/me/` on load. If authenticated, fetches `GET /api/directions/` then renders `AdminPanel` (staff/superuser) or `UserDashboard` (regular user). `directions` prop is passed down to both.
+**Auth flow:** `App.jsx` calls `GET /api/auth/me/` on load. Response includes `is_hokim` flag. If authenticated, fetches `GET /api/directions/` then renders `AdminPanel` (staff/superuser), `HokimDashboard` (`is_hokim=True`), or `UserDashboard` (regular user). `directions` prop is passed down to all three.
 
 **Vite proxy:** `/api/*` and `/media/*` → `http://localhost:8000` (defined in `vite.config.js`). All `api.js` calls use relative `/api/...` URLs.
 
-**Two user roles:**
-- **Admin/Staff** → `AdminPanel`: sidebar with direction buttons + reja/reyting links; main area shows `TaskSlider` (file review) or `DailyScoreTable` (bulk scoring) depending on `direction.admin_scored`. Also has `MFYStatusPanel` sub-tab for per-mahalla grid view.
+**Three user roles:**
+- **Admin/Staff** → `AdminPanel`: sidebar with direction buttons + reja/reyting links; main area shows `TaskSlider` (file review) or `DailyScoreTable` (bulk scoring) depending on `direction.admin_scored`. Also has `MFYStatusPanel` sub-tab for per-mahalla grid view. Superusers additionally see a KPI/GPS toggle in the header (GPS tab renders `GpsPage`).
+- **Hokim** (`profile.is_hokim=True`) → `HokimDashboard`: date-range filter + `DistrictsRanking` (via `api.getHokimRanking` → `/api/hokim/ranking/`), plus a GPS tab. No sidebar.
 - **Regular user (MFY leader)** → `UserDashboard`: direction cards for uploading evidence, sidebar with rank/score/stats.
 
 **Dark mode:** toggled via a button in the header; persists to `localStorage`. `App.jsx` applies/removes the `dark` class on `<html>` and `dark-page` on `<body>`. All components use Tailwind `dark:` variants.
@@ -176,7 +180,26 @@ All API calls go through `src/services/api.js` — a single module that handles 
 - `MonthPlanBar` — table UI for admin to set monthly `target_count` per direction; `ball/topshiriq` auto-calculated.
 - `MFYStatusPanel` — grid showing per-mahalla completion status for a selected direction; uses `/api/admin/mfy-status/`.
 - `UserDashboard` — `DirectionCard` is clickable only when `dir.is_uploadable && DIR_FIELDS[dir.key]` both true; opens inline `UploadModal`. `DIR_FIELDS` in `UserDashboard.jsx` maps direction keys to extra form fields — directions absent from this map (`1_ijro`, `10_nomenklatura`) cannot be user-submitted.
-- `ProfileModal` — lets regular users update their display name and change password via `POST /api/user/profile/`.
+- `ProfileModal` — lets regular users update display name, username, and password via `POST /api/user/profile/`.
+- `AdminProfileModal` (inside `AdminPanel.jsx`) — same for admin/staff users; shows username + password fields with show/hide toggle.
+- `GpsPage` — live vehicle map using Leaflet + OpenStreetMap. Fetches `/api/admin/gps/vehicles/` every 15 s. Sidebar shows status counts (moving/stopped/offline) and vehicle list. Map shows Asaka district boundary mask from `asaka_geometry.json`. Vehicle status: `moving` (speed>2), `stopped` (recent position, speed≤2), `offline` (no position or >15 min old). Height calculated dynamically from `#admin-header` element offset.
+- `HokimDashboard` — standalone layout (no sidebar) with KPI/GPS tab toggle in header. Reuses `DistrictsRanking` with `apiMethod={api.getHokimRanking}`.
+
+### Wialon GPS integration
+
+`backend/src/api/views/wialon_proxy.py` proxies to `https://2.wialon.uz/wialon/ajax.html`. Session (`eid`) cached for 5 min via `_sid_cache`. Key API calls:
+- `token/login` → gets `eid` session id
+- `core/search_items` with `flags: 1025` (basic info + last position), `to: 500` (**not** `count` — Wialon uses `from`/`to` range, not `count`). Session cache is invalidated on any Wialon error.
+
+### Production migration notes
+
+Production uses MySQL (`config.settings.production`). When adding new model fields:
+```powershell
+# On server — always specify production settings explicitly:
+$env:DJANGO_SETTINGS_MODULE = "config.settings.production"
+python manage.py migrate
+```
+If a migration shows "no migrations to apply" but the column is missing in MySQL, use `--fake` on the last applied migration then re-run migrate.
 
 ## Tests
 
