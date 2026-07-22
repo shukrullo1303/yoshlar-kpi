@@ -416,16 +416,25 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               <Menu className="w-5 h-5" />
             </button>
             
-            <button
-              onClick={() => directionsProp.length > 0 && handleNav(directionsProp[0].key)}
-              className="flex items-center gap-2 group"
-              title="KPI paneliga qaytish"
-            >
-              <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 group-hover:bg-blue-700 transition-colors">⚙</span>
-              <h1 className="text-sm sm:text-base font-bold truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Yoshlar KPI</h1>
-            </button>
-            {nav === NAV_GPS && (
-              <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0">GPS</span>
+            {nav === NAV_GPS ? (
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-4 h-4 text-white" />
+                </span>
+                <div>
+                  <h1 className="text-sm sm:text-base font-bold leading-none">Musora mashinalari kuzatuvi</h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Asaka tuman — jonli GPS monitoring</p>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => directionsProp.length > 0 && handleNav(directionsProp[0].key)}
+                className="flex items-center gap-2 group"
+                title="KPI paneliga qaytish"
+              >
+                <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 group-hover:bg-blue-700 transition-colors">⚙</span>
+                <h1 className="text-sm sm:text-base font-bold truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Yoshlar KPI</h1>
+              </button>
             )}
             {user?.is_superuser && (
               <button onClick={() => handleNav(NAV_GPS)}

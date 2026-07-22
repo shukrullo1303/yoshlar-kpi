@@ -17,14 +17,16 @@ export function HokimDashboard({ user, directions, onLogout, darkMode, toggleDar
       <header id="admin-header" className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm flex-shrink-0">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${tab === 'gps' ? 'bg-green-600' : 'bg-blue-600'}`}>
+              {tab === 'gps' ? <MapPin className="w-5 h-5 text-white" /> : <BarChart3 className="w-5 h-5 text-white" />}
             </div>
             <div>
               <h1 className="font-bold text-slate-900 dark:text-white leading-none text-sm sm:text-base">
-                Yoshlar KPI
+                {tab === 'gps' ? 'Mусора mashinalari kuzatuvi' : 'Yoshlar KPI'}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Asaka tuman hokimi</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {tab === 'gps' ? 'Asaka tuman — jonli GPS monitoring' : 'Asaka tuman hokimi'}
+              </p>
             </div>
           </div>
 
