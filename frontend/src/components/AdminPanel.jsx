@@ -415,14 +415,14 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 flex-shrink-0">
               <Menu className="w-5 h-5" />
             </button>
-            
+
             <div className="flex items-center gap-2">
               <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ${nav === NAV_GPS ? 'bg-green-600' : 'bg-blue-600'}`}>
                 {nav === NAV_GPS ? <MapPin className="w-4 h-4" /> : '⚙'}
               </span>
               <div className="hidden sm:block">
                 <h1 className="text-sm sm:text-base font-bold leading-none">
-                  {nav === NAV_GPS ? 'Musora mashinalari kuzatuvi' : 'Yoshlar KPI'}
+                  {nav === NAV_GPS ? 'Ekologik xizmat avtomobillari kuzatuvi' : 'Yoshlar KPI'}
                 </h1>
                 {nav === NAV_GPS && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Asaka tuman — jonli GPS monitoring</p>
@@ -430,6 +430,31 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               </div>
             </div>
 
+            {nav !== NAV_GPS && totalPending > 0 && (
+              <span className="text-xs font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full flex-shrink-0" title="Kutilmoqda">
+                {totalPending}
+              </span>
+            )}
+
+            {nav !== NAV_GPS && (
+              <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-lg px-3 py-1.5 flex-shrink-0">
+                <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Dan:</span>
+                <input type="month" value={monthFrom} onChange={e => setMonthFrom(e.target.value)}
+                  className="text-xs sm:text-sm bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none w-28" />
+                <span className="text-slate-400 dark:text-slate-600">—</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Gacha:</span>
+                <input type="month" value={monthTo} min={monthFrom} onChange={e => setMonthTo(e.target.value)}
+                  className="text-xs sm:text-sm bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none w-28" />
+                {(monthFrom || monthTo) && (
+                  <button onClick={clearMonths} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 ml-1">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
             {user?.is_superuser && (
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 flex-shrink-0">
                 <button
@@ -455,28 +480,6 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               </div>
             )}
 
-            {totalPending > 0 && nav !== NAV_GPS && (
-              <span className="text-xs font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full flex-shrink-0" title="Kutilmoqda">
-                {totalPending}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-lg px-3 py-1.5">
-              <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Dan:</span>
-              <input type="month" value={monthFrom} onChange={e => setMonthFrom(e.target.value)}
-                className="text-xs sm:text-sm bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none w-28" />
-              <span className="text-slate-400 dark:text-slate-600">—</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Gacha:</span>
-              <input type="month" value={monthTo} min={monthFrom} onChange={e => setMonthTo(e.target.value)}
-                className="text-xs sm:text-sm bg-transparent text-slate-700 dark:text-slate-200 focus:outline-none w-28" />
-              {(monthFrom || monthTo) && (
-                <button onClick={clearMonths} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 ml-1">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
 
             <button onClick={() => setProfileOpen(true)}
               title="Profil sozlamalari"
