@@ -416,39 +416,46 @@ export function AdminPanel({ user, directions: directionsProp = [], onLogout, da
               <Menu className="w-5 h-5" />
             </button>
             
-            {nav === NAV_GPS ? (
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-4 h-4 text-white" />
-                </span>
-                <div>
-                  <h1 className="text-sm sm:text-base font-bold leading-none">Musora mashinalari kuzatuvi</h1>
+            <div className="flex items-center gap-2">
+              <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ${nav === NAV_GPS ? 'bg-green-600' : 'bg-blue-600'}`}>
+                {nav === NAV_GPS ? <MapPin className="w-4 h-4" /> : '⚙'}
+              </span>
+              <div className="hidden sm:block">
+                <h1 className="text-sm sm:text-base font-bold leading-none">
+                  {nav === NAV_GPS ? 'Musora mashinalari kuzatuvi' : 'Yoshlar KPI'}
+                </h1>
+                {nav === NAV_GPS && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Asaka tuman — jonli GPS monitoring</p>
-                </div>
+                )}
               </div>
-            ) : (
-              <button
-                onClick={() => directionsProp.length > 0 && handleNav(directionsProp[0].key)}
-                className="flex items-center gap-2 group"
-                title="KPI paneliga qaytish"
-              >
-                <span className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 group-hover:bg-blue-700 transition-colors">⚙</span>
-                <h1 className="text-sm sm:text-base font-bold truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Yoshlar KPI</h1>
-              </button>
-            )}
+            </div>
+
             {user?.is_superuser && (
-              <button onClick={() => handleNav(NAV_GPS)}
-                title="GPS Kuzatuv"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                  nav === NAV_GPS
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40'
-                }`}>
-                <MapPin className="w-4 h-4" />
-                <span className="hidden sm:inline font-semibold">GPS</span>
-              </button>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 flex-shrink-0">
+                <button
+                  onClick={() => directionsProp.length > 0 && handleNav(directionsProp[0].key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    nav !== NAV_GPS
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}>
+                  <BarChart2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">KPI</span>
+                </button>
+                <button
+                  onClick={() => handleNav(NAV_GPS)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    nav === NAV_GPS
+                      ? 'bg-green-600 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}>
+                  <MapPin className="w-4 h-4" />
+                  <span className="hidden sm:inline">GPS</span>
+                </button>
+              </div>
             )}
-            {totalPending > 0 && (
+
+            {totalPending > 0 && nav !== NAV_GPS && (
               <span className="text-xs font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full flex-shrink-0" title="Kutilmoqda">
                 {totalPending}
               </span>
