@@ -14,9 +14,13 @@ body.dark-page {
   background-color: #0f172a;
 }
 
+.container,
+.max-w-screen-2xl {
+  max-width: 1800px !important;
+}
+
 .container {
   width: 100%;
-  max-width: 1800px;
   margin: 0 auto;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
